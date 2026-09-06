@@ -1,0 +1,26 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Laravel
+/hrm-backend/vendor/
+/hrm-backend/storage/logs/
+/hrm-backend/storage/framework/cache/
+/hrm-backend/storage/framework/sessions/
+/hrm-backend/storage/framework/views/
+/hrm-backend/bootstrap/cache/*.php
+
+# React / Node
+/hrm-frontend/node_modules/
+/hrm-frontend/dist/
+
+# IDE / OS
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
