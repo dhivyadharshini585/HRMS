@@ -169,6 +169,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/offer-letters/{id}/expire', [App\Http\Controllers\OfferLetterController::class, 'expire'])->middleware('permission:recruitment.offer_letters.update');
     Route::get('/offer-letters/{id}/download', [App\Http\Controllers\OfferLetterController::class, 'download'])->middleware('permission:recruitment.offer_letters.download|recruitment.offer_letters.view');
 
+    // Salary Structures
+    Route::get('/salary-structures', [App\Http\Controllers\SalaryStructureController::class, 'index'])->middleware('permission:payroll.view');
+    Route::post('/salary-structures', [App\Http\Controllers\SalaryStructureController::class, 'store'])->middleware('permission:payroll.manage');
+    Route::get('/salary-structures/{salaryStructure}', [App\Http\Controllers\SalaryStructureController::class, 'show'])->middleware('permission:payroll.view');
+    Route::put('/salary-structures/{salaryStructure}', [App\Http\Controllers\SalaryStructureController::class, 'update'])->middleware('permission:payroll.manage');
+    Route::delete('/salary-structures/{salaryStructure}', [App\Http\Controllers\SalaryStructureController::class, 'destroy'])->middleware('permission:payroll.manage');
+
+    // Payroll Processing & Records
+    Route::get('/payrolls', [App\Http\Controllers\PayrollController::class, 'index'])->middleware('permission:payroll.view');
+    Route::post('/payrolls', [App\Http\Controllers\PayrollController::class, 'store'])->middleware('permission:payroll.manage');
+    Route::get('/payrolls/{payroll}', [App\Http\Controllers\PayrollController::class, 'show'])->middleware('permission:payroll.view');
+    Route::post('/payrolls/{payroll}/approve', [App\Http\Controllers\PayrollController::class, 'approve'])->middleware('permission:payroll.approve');
+
+    // Payslips
+    Route::post('/payrolls/{payroll}/payslips', [App\Http\Controllers\PayslipController::class, 'generate'])->middleware('permission:payroll.manage');
+    Route::get('/payslips/{payslip}', [App\Http\Controllers\PayslipController::class, 'show'])->middleware('permission:payroll.view');
+
     // RBAC Test Endpoint
     Route::get('/rbac-test', function (Request $request) {
         return response()->json([

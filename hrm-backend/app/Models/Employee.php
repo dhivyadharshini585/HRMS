@@ -209,4 +209,20 @@ class Employee extends Model
     {
         return $this->hasMany(InterviewFeedback::class, 'interviewer_employee_id');
     }
+
+    /**
+     * Get the salary structures for this employee.
+     */
+    public function salaryStructures(): HasMany
+    {
+        return $this->hasMany(SalaryStructure::class);
+    }
+
+    /**
+     * Get the payrolls for this employee.
+     */
+    public function payrolls(): HasMany
+    {
+        return $this->hasMany(Payroll::class);
+    }
 }
