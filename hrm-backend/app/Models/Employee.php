@@ -217,4 +217,20 @@ class Employee extends Model
     {
         return $this->hasOne(Onboarding::class);
     }
+
+    /**
+     * Get the salary structures for this employee.
+     */
+    public function salaryStructures(): HasMany
+    {
+        return $this->hasMany(SalaryStructure::class);
+    }
+
+    /**
+     * Get the payrolls for this employee.
+     */
+    public function payrolls(): HasMany
+    {
+        return $this->hasMany(Payroll::class);
+    }
 }
