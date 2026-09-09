@@ -1,10 +1,25 @@
-import { useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import { useSelector } from 'react-redux';
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+export const useAuth = () => {
+  const { user, token, isAuthenticated, roles, permissions } = useSelector((state) => state.auth);
+
+  const hasRole = (allowedRoles) => {
+    if (!roles) return false;
+    return roles.some(role => allowedRoles.includes(role));
+  };
+
+  const hasPermission = (permission) => {
+    if (!permissions) return false;
+    return permissions.includes(permission);
+  };
+
+  return {
+    user,
+    token,
+    isAuthenticated,
+    roles,
+    permissions,
+    hasRole,
+    hasPermission
+  };
+};
