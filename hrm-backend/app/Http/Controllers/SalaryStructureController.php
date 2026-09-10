@@ -30,7 +30,7 @@ class SalaryStructureController extends Controller
         $structure = SalaryStructure::create([
             'employee_id' => $validated['employee_id'],
             'effective_from' => $validated['effective_from'],
-            'effective_to' => $validated['effective_to'],
+            'effective_to' => $validated['effective_to'] ?? null,
             'status' => $validated['status'],
         ]);
 

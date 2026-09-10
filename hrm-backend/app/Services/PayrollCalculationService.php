@@ -51,7 +51,9 @@ class PayrollCalculationService
 
         // 3. Extract components
         $components = $structure->components;
-        $basicSalaryComponent = $components->where('name', 'Basic Salary')->first();
+        $basicSalaryComponent = $components->filter(function ($component) {
+            return $component->type === 'Earning' && stripos($component->name, 'Basic') !== false;
+        })->first();
         $basicSalaryAmount = $basicSalaryComponent ? $basicSalaryComponent->amount : 0;
 
         $grossEarnings = $components->where('type', 'Earning')->sum('amount');

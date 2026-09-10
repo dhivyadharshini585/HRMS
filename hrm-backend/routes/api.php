@@ -184,7 +184,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Payslips
     Route::post('/payrolls/{payroll}/payslips', [App\Http\Controllers\PayslipController::class, 'generate'])->middleware('permission:payroll.manage');
-    Route::get('/payslips/{payslip}', [App\Http\Controllers\PayslipController::class, 'show'])->middleware('permission:payroll.view');
+    Route::get('/payslips/{payslip}', [App\Http\Controllers\PayslipController::class, 'show']);
+
+    // Payroll Reports
+    Route::get('/reports/payroll/summary', [App\Http\Controllers\PayrollReportController::class, 'monthlySummary'])->middleware('permission:payroll.view');
+    Route::get('/reports/payroll/department', [App\Http\Controllers\PayrollReportController::class, 'departmentWise'])->middleware('permission:payroll.view');
+    Route::get('/reports/payroll/deductions', [App\Http\Controllers\PayrollReportController::class, 'deductionReport'])->middleware('permission:payroll.view');
+    Route::get('/reports/payroll/employee', [App\Http\Controllers\PayrollReportController::class, 'employeeReport'])->middleware('permission:payroll.view');
 
     // RBAC Test Endpoint
     Route::get('/rbac-test', function (Request $request) {

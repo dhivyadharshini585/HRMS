@@ -34,4 +34,6 @@ export const ROUTES = {
   HOLIDAYS: '/holidays',
   REPORTS_ATTENDANCE: '/reports/attendance',
   REPORTS_LEAVE: '/reports/leave',
+  PAYROLL_REPORTS: '/reports/payroll',
+  PAYSLIP_VIEW: '/payslips/:id',
 };
