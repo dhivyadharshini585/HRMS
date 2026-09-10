@@ -37,4 +37,6 @@ export const ROUTES = {
   REPORTS_ATTENDANCE: '/reports/attendance',
   REPORTS_LEAVE: '/reports/leave',
   REPORTS_RECRUITMENT: '/reports/recruitment',
+  PAYROLL_REPORTS: '/reports/payroll',
+  PAYSLIP_VIEW: '/payslips/:id',
 };

@@ -26,6 +26,8 @@ import Jobs from '../pages/Jobs';
 import Candidates from '../pages/Candidates';
 import Recruitment from '../pages/Recruitment';
 import Payroll from '../pages/Payroll';
+import PayrollReports from '../pages/Payroll/PayrollReports';
+import PayslipView from '../pages/Payroll/PayslipView';
 import Performance from '../pages/Performance';
 import Training from '../pages/Training';
 import Assets from '../pages/Assets';
@@ -160,7 +162,18 @@ export const router = createBrowserRouter([
           // PAYROLL: Super Admin, Finance/Payroll Admin, HR Admin
           { 
             element: <ProtectedRoute roles={['Super Admin', 'Finance/Payroll Admin', 'HR Admin']} />,
-            children: [{ path: ROUTES.PAYROLL, element: <Payroll /> }]
+            children: [
+              { path: ROUTES.PAYROLL, element: <Payroll /> },
+              { path: ROUTES.PAYROLL_REPORTS, element: <PayrollReports /> },
+            ]
+          },
+          
+          // PAYSLIP VIEW (Available to Employees too)
+          {
+            element: <ProtectedRoute />, // Let PayslipView handle ownership logic
+            children: [
+              { path: ROUTES.PAYSLIP_VIEW, element: <PayslipView /> },
+            ]
           },
 
           // PERFORMANCE: Super Admin, HR Admin, Manager, Employee
