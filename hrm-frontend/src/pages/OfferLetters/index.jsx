@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import offerLetterService from '../../services/offerLetterService';
 import candidateService from '../../services/candidateService';
 import jobOpeningService from '../../services/jobOpeningService';
@@ -7,24 +7,65 @@ import { useAuthContext } from '../../context/AuthContext';
 
 const OFFER_STATUSES = ['Draft', 'Sent', 'Accepted', 'Rejected', 'Withdrawn', 'Expired'];
 const EMPLOYMENT_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship'];
-const SALARY_PERIODS = ['Annual', 'Monthly', 'Hourly'];
+const SALARY_FREQUENCIES = ['Annual', 'Monthly', 'Bi-weekly', 'Weekly', 'Hourly'];
+const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD', 'AUD', 'CAD'];
 
 const initialFormData = {
   candidate_id: '',
   job_opening_id: '',
   department_id: '',
-  position_title: '',
+  designation: '',
   employment_type: 'Full-time',
-  base_salary: '',
-  currency: 'USD',
-  salary_period: 'Annual',
+  work_location: '',
+  salary_amount: '',
+  salary_currency: 'INR',
+  salary_frequency: 'Monthly',
   offer_date: new Date().toISOString().split('T')[0],
   joining_date: '',
   expiry_date: '',
-  terms_and_conditions: 'This offer is contingent upon successful verification of professional credentials and background check. Standard company policies and benefits apply.',
-  special_allowances: '',
+  probation_period_months: '',
+  notice_period_days: '',
+  benefits: '',
+  terms_and_conditions: '',
 };
 
+/* ---- helpers ---- */
+const fmtDate = (d) => {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
+  catch { return d; }
+};
+
+const fmtSalary = (amt, curr) => {
+  if (!amt && amt !== 0) return '—';
+  const n = Number(amt);
+  return `${curr || 'INR'} ${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
+const candidateName = (c) => c ? `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Unknown' : 'Unknown';
+
+/* ---- status badge ---- */
+const getStatusBadgeClass = (status) => {
+  switch (status) {
+    case 'Draft': return 'badge-neutral';
+    case 'Sent': return 'badge-info';
+    case 'Accepted': return 'badge-success';
+    case 'Rejected': return 'badge-danger';
+    case 'Withdrawn': return 'badge-warning';
+    case 'Expired': return 'badge-danger';
+    default: return 'badge-neutral';
+  }
+};
+
+const StatusBadge = ({ status }) => (
+  <span className={`badge ${getStatusBadgeClass(status)}`}>
+    {status}
+  </span>
+);
+
+/* ============================================= */
+/*              MAIN COMPONENT                   */
+/* ============================================= */
 const OfferLetters = () => {
   const { user } = useAuthContext();
 
@@ -32,12 +73,7 @@ const OfferLetters = () => {
   const [candidates, setCandidates] = useState([]);
   const [jobOpenings, setJobOpenings] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    lastPage: 1,
-    total: 0,
-    perPage: 10,
-  });
+  const [pagination, setPagination] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 15 });
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -47,8 +83,6 @@ const OfferLetters = () => {
   // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [candidateFilter, setCandidateFilter] = useState('');
-  const [jobFilter, setJobFilter] = useState('');
   const [fromDateFilter, setFromDateFilter] = useState('');
   const [toDateFilter, setToDateFilter] = useState('');
 
@@ -57,7 +91,7 @@ const OfferLetters = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [isRespondModalOpen, setIsRespondModalOpen] = useState(false);
-  const [respondAction, setRespondAction] = useState(''); // 'accept', 'reject', 'withdraw'
+  const [respondAction, setRespondAction] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const [activeOffer, setActiveOffer] = useState(null);
@@ -68,288 +102,194 @@ const OfferLetters = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [downloadingId, setDownloadingId] = useState(null);
 
-  // RBAC checks
-  const canCreate = user?.roles?.some(r => ['Super Admin', 'HR Admin', 'HR Executive'].includes(r)) ||
-                    user?.permissions?.includes('recruitment.offer_letters.create');
-  const canUpdate = user?.roles?.some(r => ['Super Admin', 'HR Admin', 'HR Executive'].includes(r)) ||
-                    user?.permissions?.includes('recruitment.offer_letters.update');
-  const canDelete = user?.roles?.some(r => ['Super Admin', 'HR Admin'].includes(r)) ||
-                    user?.permissions?.includes('recruitment.offer_letters.delete');
-  const canSend = user?.roles?.some(r => ['Super Admin', 'HR Admin', 'HR Executive'].includes(r)) ||
-                  user?.permissions?.includes('recruitment.offer_letters.send');
-  const canRespond = user?.roles?.some(r => ['Super Admin', 'HR Admin', 'HR Executive'].includes(r)) ||
-                     user?.permissions?.includes('recruitment.offer_letters.respond');
-  const canDownload = user?.roles?.some(r => ['Super Admin', 'HR Admin', 'HR Executive'].includes(r)) ||
-                      user?.permissions?.includes('recruitment.offer_letters.download') ||
-                      user?.permissions?.includes('recruitment.offer_letters.view');
+  /* ---- RBAC ---- */
+  const hasRole = (...roles) => user?.roles?.some(r => roles.includes(r));
+  const hasPerm = (p) => user?.permissions?.includes(p);
+  const canCreate   = hasRole('Super Admin', 'HR Admin', 'HR Executive') || hasPerm('recruitment.offer_letters.create');
+  const canUpdate   = hasRole('Super Admin', 'HR Admin', 'HR Executive') || hasPerm('recruitment.offer_letters.update');
+  const canDelete   = hasRole('Super Admin', 'HR Admin') || hasPerm('recruitment.offer_letters.delete');
+  const canSend     = hasRole('Super Admin', 'HR Admin', 'HR Executive') || hasPerm('recruitment.offer_letters.send');
+  const canRespond  = hasRole('Super Admin', 'HR Admin', 'HR Executive') || hasPerm('recruitment.offer_letters.respond');
+  const canDownload = hasRole('Super Admin', 'HR Admin', 'HR Executive') || hasPerm('recruitment.offer_letters.download') || hasPerm('recruitment.offer_letters.view');
 
-  // Fetch Offer Letters
+  /* ---- Summary stats ---- */
+  const stats = useMemo(() => {
+    const counts = { Total: offerLetters.length, Draft: 0, Sent: 0, Accepted: 0, Rejected: 0, Expired: 0 };
+    offerLetters.forEach(o => { if (counts[o.offer_status] !== undefined) counts[o.offer_status]++; });
+    if (pagination.total > offerLetters.length) counts.Total = pagination.total;
+    return counts;
+  }, [offerLetters, pagination.total]);
+
+  /* ---- Data Fetching ---- */
   const fetchOfferLetters = useCallback(async (page = 1) => {
     setLoading(true);
     setError('');
     try {
-      const params = {
-        page,
-        per_page: pagination.perPage,
-      };
+      const params = { page, per_page: pagination.perPage };
       if (search.trim()) params.search = search.trim();
       if (statusFilter) params.offer_status = statusFilter;
-      if (candidateFilter) params.candidate_id = candidateFilter;
-      if (jobFilter) params.job_opening_id = jobFilter;
       if (fromDateFilter) params.offer_date_from = fromDateFilter;
       if (toDateFilter) params.offer_date_to = toDateFilter;
-
       const response = await offerLetterService.getOfferLetters(params);
-      const data = response?.data || response;
-      setOfferLetters(data?.data || []);
+      const dataList = response?.data || [];
+      setOfferLetters(dataList);
       setPagination({
-        currentPage: data?.current_page || 1,
-        lastPage: data?.last_page || 1,
-        total: data?.total || 0,
-        perPage: data?.per_page || 10,
+        currentPage: response?.current_page || 1,
+        lastPage: response?.last_page || 1,
+        total: response?.total || 0,
+        perPage: response?.per_page || 15,
       });
     } catch (err) {
-      console.error('Error fetching offer letters:', err);
       setError(err?.response?.data?.message || 'Failed to load offer letters.');
     } finally {
       setLoading(false);
     }
-  }, [pagination.perPage, search, statusFilter, candidateFilter, jobFilter, fromDateFilter, toDateFilter]);
+  }, [pagination.perPage, search, statusFilter, fromDateFilter, toDateFilter]);
 
-  // Fetch Candidates (Only Hired Candidates for create offer)
   const fetchCandidates = useCallback(async () => {
     try {
-      const res = await candidateService.getCandidates({ per_page: 200 });
-      const candList = res?.data?.data || res?.data || [];
-      setCandidates(candList);
-    } catch (err) {
-      console.error('Error fetching candidates:', err);
-    }
+      const res = await candidateService.getCandidates({ per_page: 500 });
+      setCandidates(res?.data?.data || res?.data || []);
+    } catch { /* silent */ }
   }, []);
-
-  // Fetch Job Openings
   const fetchJobOpenings = useCallback(async () => {
     try {
-      const res = await jobOpeningService.getJobOpenings({ per_page: 200 });
-      const list = res?.data?.data || res?.data || [];
-      setJobOpenings(list);
-    } catch (err) {
-      console.error('Error fetching job openings:', err);
-    }
+      const res = await jobOpeningService.getJobOpenings({ per_page: 500 });
+      setJobOpenings(res?.data?.data || res?.data || []);
+    } catch { /* silent */ }
   }, []);
-
-  // Fetch Departments
   const fetchDepartments = useCallback(async () => {
     try {
-      const res = await departmentService.getDepartments({ per_page: 100 });
-      const list = res?.data?.data || res?.data || [];
-      setDepartments(list);
-    } catch (err) {
-      console.error('Error fetching departments:', err);
-    }
+      const res = await departmentService.getDepartments({ per_page: 500 });
+      setDepartments(res?.data?.data || res?.data || []);
+    } catch { /* silent */ }
   }, []);
 
-  useEffect(() => {
-    fetchOfferLetters(1);
-    fetchCandidates();
-    fetchJobOpenings();
-    fetchDepartments();
-  }, [fetchOfferLetters, fetchCandidates, fetchJobOpenings, fetchDepartments]);
+  useEffect(() => { fetchOfferLetters(1); fetchCandidates(); fetchJobOpenings(); fetchDepartments(); }, [fetchOfferLetters, fetchCandidates, fetchJobOpenings, fetchDepartments]);
 
-  // Handle Candidate Selection in Create Form
+  useEffect(() => { if (!successMessage) return; const t = setTimeout(() => setSuccessMessage(''), 5000); return () => clearTimeout(t); }, [successMessage]);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setStatusFilter('');
+    setFromDateFilter('');
+    setToDateFilter('');
+  };
+
+  /* ---- Candidate auto-bind ---- */
+  const hiredCandidates = useMemo(() => candidates.filter(c => c.status === 'Hired'), [candidates]);
+
   const handleCandidateChange = (e) => {
     const candId = e.target.value;
     const selected = candidates.find(c => String(c.id) === String(candId));
-
     if (selected) {
       setFormData(prev => ({
         ...prev,
         candidate_id: candId,
         job_opening_id: selected.job_opening_id || '',
         department_id: selected.job_opening?.department_id || selected.job_opening?.department?.id || '',
-        position_title: selected.job_opening?.title || prev.position_title,
+        designation: selected.job_opening?.title || prev.designation,
       }));
     } else {
-      setFormData(prev => ({
-        ...prev,
-        candidate_id: candId,
-        job_opening_id: '',
-        department_id: '',
-      }));
+      setFormData(prev => ({ ...prev, candidate_id: candId, job_opening_id: '', department_id: '' }));
     }
   };
 
-  // Open Create Modal
-  const openCreateModal = () => {
-    setActiveOffer(null);
-    setFormData(initialFormData);
-    setFormErrors({});
-    setError('');
-    setIsFormModalOpen(true);
-  };
-
-  // Open Edit Modal
+  /* ---- Modal openers ---- */
+  const openCreateModal = () => { setActiveOffer(null); setFormData(initialFormData); setFormErrors({}); setError(''); setIsFormModalOpen(true); };
   const openEditModal = (offer) => {
-    if (offer.offer_status !== 'Draft') {
-      setError("Only 'Draft' offer letters can be edited.");
-      return;
-    }
+    if (offer.offer_status !== 'Draft') { setError("Only Draft offer letters can be edited."); return; }
     setActiveOffer(offer);
     setFormData({
-      candidate_id: offer.candidate_id,
-      job_opening_id: offer.job_opening_id,
+      candidate_id: offer.candidate_id, job_opening_id: offer.job_opening_id,
       department_id: offer.department_id || offer.job_opening?.department_id || '',
-      position_title: offer.position_title,
-      employment_type: offer.employment_type || 'Full-time',
-      base_salary: offer.base_salary,
-      currency: offer.currency || 'USD',
-      salary_period: offer.salary_period || 'Annual',
+      designation: offer.designation || '', employment_type: offer.employment_type || 'Full-time',
+      work_location: offer.work_location || '',
+      salary_amount: offer.salary_amount || '', salary_currency: offer.salary_currency || 'INR', salary_frequency: offer.salary_frequency || 'Monthly',
       offer_date: offer.offer_date ? offer.offer_date.split('T')[0] : '',
       joining_date: offer.joining_date ? offer.joining_date.split('T')[0] : '',
       expiry_date: offer.expiry_date ? offer.expiry_date.split('T')[0] : '',
-      terms_and_conditions: offer.terms_and_conditions || '',
-      special_allowances: offer.special_allowances || '',
+      probation_period_months: offer.probation_period_months ?? '', notice_period_days: offer.notice_period_days ?? '',
+      benefits: offer.benefits || '', terms_and_conditions: offer.terms_and_conditions || '',
     });
-    setFormErrors({});
-    setError('');
-    setIsFormModalOpen(true);
+    setFormErrors({}); setError(''); setIsFormModalOpen(true);
   };
+  const openDetailModal = (offer) => { setActiveOffer(offer); setIsDetailModalOpen(true); };
+  const openSendModal = (offer) => { setActiveOffer(offer); setIsSendModalOpen(true); };
+  const openRespondModal = (offer, action) => { setActiveOffer(offer); setRespondAction(action); setRemarks(''); setRemarksError(''); setIsRespondModalOpen(true); };
+  const openDeleteModal = (offer) => { setActiveOffer(offer); setIsDeleteModalOpen(true); };
 
-  // Open Details Modal
-  const openDetailModal = (offer) => {
-    setActiveOffer(offer);
-    setIsDetailModalOpen(true);
-  };
-
-  // Open Send Modal
-  const openSendModal = (offer) => {
-    setActiveOffer(offer);
-    setIsSendModalOpen(true);
-  };
-
-  // Open Respond Modal (accept, reject, withdraw)
-  const openRespondModal = (offer, action) => {
-    setActiveOffer(offer);
-    setRespondAction(action);
-    setRemarks('');
-    setRemarksError('');
-    setIsRespondModalOpen(true);
-  };
-
-  // Open Delete Modal
-  const openDeleteModal = (offer) => {
-    setActiveOffer(offer);
-    setIsDeleteModalOpen(true);
-  };
-
-  // Form Submission (Create or Update)
+  /* ---- Form Submit ---- */
   const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setFormErrors({});
-    setError('');
-
+    e.preventDefault(); setSubmitting(true); setFormErrors({}); setError('');
     try {
       if (activeOffer) {
-        // Update draft
         const res = await offerLetterService.updateOfferLetter(activeOffer.id, formData);
         setSuccessMessage(`Offer letter '${res.data?.offer_code || activeOffer.offer_code}' updated successfully.`);
+        setIsFormModalOpen(false); 
+        fetchOfferLetters(pagination.currentPage);
       } else {
-        // Create new
         const res = await offerLetterService.createOfferLetter(formData);
-        setSuccessMessage(`Offer letter '${res.data?.offer_code || 'new'}' created successfully.`);
+        setSuccessMessage(`Offer letter '${res.data?.offer_code || ''}' created successfully.`);
+        setIsFormModalOpen(false); 
+        // Reset filters and go to first page so the new item is clearly visible
+        setSearch('');
+        setStatusFilter('');
+        setFromDateFilter('');
+        setToDateFilter('');
+        fetchOfferLetters(1);
       }
-      setIsFormModalOpen(false);
-      fetchOfferLetters(pagination.currentPage);
     } catch (err) {
-      console.error('Form submission error:', err);
-      if (err.response?.status === 422 && err.response?.data?.errors) {
-        setFormErrors(err.response.data.errors);
-      } else {
-        setError(err.response?.data?.message || 'Failed to save offer letter.');
-      }
-    } finally {
-      setSubmitting(false);
-    }
+      if (err.response?.status === 422 && err.response?.data?.errors) setFormErrors(err.response.data.errors);
+      else setError(err.response?.data?.message || 'Failed to save offer letter.');
+    } finally { setSubmitting(false); }
   };
 
-  // Handle Send
+  /* ---- Send ---- */
   const handleSend = async () => {
-    if (!activeOffer) return;
-    setActionLoading(true);
-    setError('');
+    if (!activeOffer) return; setActionLoading(true); setError('');
     try {
       const res = await offerLetterService.sendOfferLetter(activeOffer.id);
       setSuccessMessage(res.message || `Offer letter '${activeOffer.offer_code}' sent successfully.`);
       setIsSendModalOpen(false);
-      if (isDetailModalOpen && activeOffer?.id === res.data?.id) {
-        setActiveOffer(res.data);
-      }
+      if (isDetailModalOpen && activeOffer?.id === res.data?.id) setActiveOffer(res.data);
       fetchOfferLetters(pagination.currentPage);
-    } catch (err) {
-      console.error('Send error:', err);
-      setError(err.response?.data?.message || 'Failed to send offer letter.');
-    } finally {
-      setActionLoading(false);
-    }
+    } catch (err) { setError(err.response?.data?.message || 'Failed to send offer letter.'); }
+    finally { setActionLoading(false); }
   };
 
-  // Handle Respond (Accept / Reject / Withdraw)
+  /* ---- Respond ---- */
   const handleRespond = async () => {
     if (!activeOffer) return;
-    if (respondAction === 'reject' && !remarks.trim()) {
-      setRemarksError('Remarks / reason are required when rejecting an offer letter.');
-      return;
-    }
-
-    setActionLoading(true);
-    setError('');
+    if (respondAction === 'reject' && !remarks.trim()) { setRemarksError('Remarks are required when rejecting.'); return; }
+    setActionLoading(true); setError('');
     try {
       let res;
-      if (respondAction === 'accept') {
-        res = await offerLetterService.acceptOfferLetter(activeOffer.id, remarks.trim());
-      } else if (respondAction === 'reject') {
-        res = await offerLetterService.rejectOfferLetter(activeOffer.id, remarks.trim());
-      } else if (respondAction === 'withdraw') {
-        res = await offerLetterService.withdrawOfferLetter(activeOffer.id, remarks.trim());
-      }
-
-      setSuccessMessage(res?.message || `Offer letter status updated to ${res?.data?.offer_status}.`);
+      if (respondAction === 'accept') res = await offerLetterService.acceptOfferLetter(activeOffer.id, remarks.trim());
+      else if (respondAction === 'reject') res = await offerLetterService.rejectOfferLetter(activeOffer.id, remarks.trim());
+      else if (respondAction === 'withdraw') res = await offerLetterService.withdrawOfferLetter(activeOffer.id, remarks.trim());
+      setSuccessMessage(res?.message || 'Offer letter status updated.');
       setIsRespondModalOpen(false);
-      if (isDetailModalOpen && activeOffer?.id === res?.data?.id) {
-        setActiveOffer(res.data);
-      }
+      if (isDetailModalOpen && activeOffer?.id === res?.data?.id) setActiveOffer(res.data);
       fetchOfferLetters(pagination.currentPage);
-    } catch (err) {
-      console.error('Respond error:', err);
-      setError(err.response?.data?.message || 'Failed to update offer status.');
-    } finally {
-      setActionLoading(false);
-    }
+    } catch (err) { setError(err.response?.data?.message || 'Failed to update offer status.'); }
+    finally { setActionLoading(false); }
   };
 
-  // Handle Delete
+  /* ---- Delete ---- */
   const handleDelete = async () => {
-    if (!activeOffer) return;
-    setActionLoading(true);
-    setError('');
+    if (!activeOffer) return; setActionLoading(true); setError('');
     try {
       const res = await offerLetterService.deleteOfferLetter(activeOffer.id);
-      setSuccessMessage(res.message || `Offer letter '${activeOffer.offer_code}' deleted.`);
-      setIsDeleteModalOpen(false);
-      fetchOfferLetters(pagination.currentPage);
-    } catch (err) {
-      console.error('Delete error:', err);
-      setError(err.response?.data?.message || 'Failed to delete offer letter.');
-    } finally {
-      setActionLoading(false);
-    }
+      setSuccessMessage(res.message || `Offer letter deleted.`);
+      setIsDeleteModalOpen(false); fetchOfferLetters(pagination.currentPage);
+    } catch (err) { setError(err.response?.data?.message || 'Failed to delete offer letter.'); }
+    finally { setActionLoading(false); }
   };
 
-  // Handle Download PDF
+  /* ---- Download ---- */
   const handleDownload = async (offer) => {
-    setDownloadingId(offer.id);
-    setError('');
+    setDownloadingId(offer.id); setError('');
     try {
       const response = await offerLetterService.downloadOfferLetter(offer.id);
       const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -357,440 +297,236 @@ const OfferLetters = () => {
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `${offer.offer_code || 'Offer_Letter'}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
+      document.body.appendChild(link); link.click(); link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Download error:', err);
-      setError(err.response?.data?.message || 'Failed to download offer letter PDF.');
-    } finally {
-      setDownloadingId(null);
-    }
+      if (err.response?.status === 403) setError('You are not authorized to download this document.');
+      else if (err.response?.status === 404) setError('Offer letter document not found.');
+      else setError(err.response?.data?.message || 'Failed to download PDF.');
+    } finally { setDownloadingId(null); }
   };
-
-  // Status Badge Styling
-  const getStatusBadge = (status) => {
-    const map = {
-      Draft: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
-      Sent: 'bg-sky-50 text-sky-700 border-sky-300 dark:bg-sky-950/50 dark:text-sky-400 dark:border-sky-800',
-      Accepted: 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800',
-      Rejected: 'bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/50 dark:text-rose-400 dark:border-rose-800',
-      Withdrawn: 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800',
-      Expired: 'bg-zinc-100 text-zinc-600 border-zinc-300 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700',
-    };
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${map[status] || 'bg-gray-100 text-gray-700'}`}>
-        <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-          status === 'Accepted' ? 'bg-emerald-500' :
-          status === 'Sent' ? 'bg-sky-500 animate-pulse' :
-          status === 'Rejected' ? 'bg-rose-500' :
-          status === 'Withdrawn' ? 'bg-amber-500' :
-          status === 'Expired' ? 'bg-zinc-500' : 'bg-slate-400'
-        }`} />
-        {status}
-      </span>
-    );
-  };
-
-  // Candidates with Hired status only for the dropdown
-  const hiredCandidates = candidates.filter(c => c.status === 'Hired');
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="page-container" id="offer-letters-page">
+      {/* PAGE HEADER */}
+      <div className="page-header">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 text-xs font-semibold tracking-wider text-indigo-700 uppercase bg-indigo-50 border border-indigo-200 rounded-full dark:bg-indigo-950/50 dark:text-indigo-400 dark:border-indigo-800">
-              Recruitment Module
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
-            Offer Letters
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Create, issue, and manage formal candidate employment offers with automated PDF generation.
+          <h1 className="page-title">Offer Letters</h1>
+          <p className="page-subtitle">
+            Create, send, and manage candidate offer letters.
           </p>
         </div>
-
         {canCreate && (
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white transition-all bg-indigo-600 rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:scale-95"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Generate Offer Letter
+          <button className="btn-primary" onClick={openCreateModal}>
+            + Create Offer Letter
           </button>
         )}
       </div>
 
-      {/* Alerts */}
+      {/* ALERTS */}
       {error && (
-        <div className="p-4 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl dark:bg-rose-950/50 dark:text-rose-400 dark:border-rose-900 flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-            <span>{error}</span>
-          </div>
-          <button onClick={() => setError('')} className="text-rose-500 hover:text-rose-700 font-bold">&times;</button>
+        <div className="alert-banner error">
+          {error}
         </div>
       )}
-
       {successMessage && (
-        <div className="p-4 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-900 flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            <span>{successMessage}</span>
-          </div>
-          <button onClick={() => setSuccessMessage('')} className="text-emerald-500 hover:text-emerald-700 font-bold">&times;</button>
+        <div className="alert-banner success">
+          {successMessage}
         </div>
       )}
 
-      {/* Filter Bar */}
-      <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs dark:bg-slate-900 dark:border-slate-800 space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {/* Search */}
-          <div className="lg:col-span-2">
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Search</label>
-            <input
-              type="text"
-              placeholder="Search code, candidate, role..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Status */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Status</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            >
-              <option value="">All Statuses</option>
-              {OFFER_STATUSES.map(st => (
-                <option key={st} value={st}>{st}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Candidate */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Candidate</label>
-            <select
-              value={candidateFilter}
-              onChange={(e) => setCandidateFilter(e.target.value)}
-              className="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            >
-              <option value="">All Candidates</option>
-              {candidates.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.first_name} {c.last_name} ({c.candidate_code})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Offer Date Range */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">From Date</label>
-            <input
-              type="date"
-              value={fromDateFilter}
-              onChange={(e) => setFromDateFilter(e.target.value)}
-              className="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">To Date</label>
-            <input
-              type="date"
-              value={toDateFilter}
-              onChange={(e) => setToDateFilter(e.target.value)}
-              className="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            />
-          </div>
+      {/* SUMMARY CARDS */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div className="detail-card" style={{ marginBottom: 0, padding: '1.25rem', borderLeft: '4px solid #3b82f6' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Offers</div>
+          <div style={{ fontSize: '1.85rem', fontWeight: 700, marginTop: '0.25rem', color: 'var(--text-primary)' }}>{stats.Total}</div>
         </div>
-
-        {/* Clear Filters Button */}
-        {(search || statusFilter || candidateFilter || jobFilter || fromDateFilter || toDateFilter) && (
-          <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
-            <button
-              onClick={() => {
-                setSearch('');
-                setStatusFilter('');
-                setCandidateFilter('');
-                setJobFilter('');
-                setFromDateFilter('');
-                setToDateFilter('');
-              }}
-              className="text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-            >
-              Reset Filters
-            </button>
-          </div>
-        )}
+        <div className="detail-card" style={{ marginBottom: 0, padding: '1.25rem', borderLeft: '4px solid #475569' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Draft</div>
+          <div style={{ fontSize: '1.85rem', fontWeight: 700, marginTop: '0.25rem', color: '#475569' }}>{stats.Draft}</div>
+        </div>
+        <div className="detail-card" style={{ marginBottom: 0, padding: '1.25rem', borderLeft: '4px solid #3730a3' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sent</div>
+          <div style={{ fontSize: '1.85rem', fontWeight: 700, marginTop: '0.25rem', color: '#3730a3' }}>{stats.Sent}</div>
+        </div>
+        <div className="detail-card" style={{ marginBottom: 0, padding: '1.25rem', borderLeft: '4px solid #16a34a' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Accepted</div>
+          <div style={{ fontSize: '1.85rem', fontWeight: 700, marginTop: '0.25rem', color: '#16a34a' }}>{stats.Accepted}</div>
+        </div>
+        <div className="detail-card" style={{ marginBottom: 0, padding: '1.25rem', borderLeft: '4px solid #ef4444' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rejected</div>
+          <div style={{ fontSize: '1.85rem', fontWeight: 700, marginTop: '0.25rem', color: '#ef4444' }}>{stats.Rejected}</div>
+        </div>
+        <div className="detail-card" style={{ marginBottom: 0, padding: '1.25rem', borderLeft: '4px solid #f97316' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Expired</div>
+          <div style={{ fontSize: '1.85rem', fontWeight: 700, marginTop: '0.25rem', color: '#f97316' }}>{stats.Expired}</div>
+        </div>
       </div>
 
-      {/* Main Table */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-xs dark:bg-slate-900 dark:border-slate-800 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
-            <thead className="bg-slate-50 dark:bg-slate-800/50">
-              <tr>
-                <th scope="col" className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Offer Code
-                </th>
-                <th scope="col" className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Candidate
-                </th>
-                <th scope="col" className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Position & Type
-                </th>
-                <th scope="col" className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Compensation
-                </th>
-                <th scope="col" className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Dates
-                </th>
-                <th scope="col" className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-              {loading ? (
-                <tr>
-                  <td colSpan="7" className="px-4 py-12 text-center text-slate-500 dark:text-slate-400">
-                    <div className="inline-flex items-center gap-2">
-                      <svg className="w-5 h-5 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                      </svg>
-                      <span>Loading offer letters...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : offerLetters.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="px-4 py-12 text-center text-slate-500 dark:text-slate-400">
-                    <div className="max-w-sm mx-auto space-y-2">
-                      <svg className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No offer letters found</p>
-                      <p className="text-xs text-slate-400">Try adjusting your search criteria or create an offer for a Hired candidate.</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                offerLetters.map((offer) => {
-                  const isDraft = offer.offer_status === 'Draft';
-                  const isSent = offer.offer_status === 'Sent';
-
-                  return (
-                    <tr key={offer.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
-                      {/* Offer Code */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
-                            {offer.offer_code}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">
-                          {offer.created_at ? new Date(offer.created_at).toLocaleDateString() : ''}
-                        </div>
-                      </td>
-
-                      {/* Candidate */}
-                      <td className="px-4 py-3.5">
-                        <div className="font-medium text-slate-900 dark:text-white text-sm">
-                          {offer.candidate ? `${offer.candidate.first_name} ${offer.candidate.last_name}` : 'Unknown'}
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          {offer.candidate?.email || offer.candidate?.candidate_code}
-                        </div>
-                      </td>
-
-                      {/* Position & Type */}
-                      <td className="px-4 py-3.5">
-                        <div className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                          {offer.position_title}
-                        </div>
-                        <div className="text-xs text-slate-400 flex items-center gap-1.5">
-                          <span>{offer.job_opening?.title || 'Direct'}</span>
-                          <span>&bull;</span>
-                          <span className="font-medium text-slate-600 dark:text-slate-300">{offer.employment_type}</span>
-                        </div>
-                      </td>
-
-                      {/* Compensation */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <div className="text-sm font-bold text-slate-900 dark:text-white">
-                          {offer.currency} {Number(offer.base_salary).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          {offer.salary_period}
-                        </div>
-                      </td>
-
-                      {/* Dates */}
-                      <td className="px-4 py-3.5 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
-                        <div>
-                          <span className="font-semibold text-slate-600 dark:text-slate-300">Join: </span>
-                          {offer.joining_date ? new Date(offer.joining_date).toLocaleDateString() : '—'}
-                        </div>
-                        {offer.expiry_date && (
-                          <div className="text-[11px] text-slate-400">
-                            <span>Expires: </span>
-                            {new Date(offer.expiry_date).toLocaleDateString()}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        {getStatusBadge(offer.offer_status)}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-4 py-3.5 whitespace-nowrap text-right text-sm">
-                        <div className="inline-flex items-center gap-1.5">
-                          {/* View Details */}
-                          <button
-                            type="button"
-                            onClick={() => openDetailModal(offer)}
-                            className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-md transition"
-                            title="View Full Details"
-                          >
-                            Details
-                          </button>
-
-                          {/* Download PDF */}
-                          {canDownload && (
-                            <button
-                              type="button"
-                              onClick={() => handleDownload(offer)}
-                              disabled={downloadingId === offer.id}
-                              className="px-2 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:text-indigo-400 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 rounded-md transition inline-flex items-center gap-1"
-                              title="Download PDF Document"
-                            >
-                              {downloadingId === offer.id ? (
-                                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                                </svg>
-                              ) : (
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                              )}
-                              PDF
-                            </button>
-                          )}
-
-                          {/* Send (Draft only) */}
-                          {isDraft && canSend && (
-                            <button
-                              type="button"
-                              onClick={() => openSendModal(offer)}
-                              className="px-2.5 py-1 text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 dark:text-sky-300 dark:bg-sky-950/40 dark:hover:bg-sky-900/50 rounded-md transition"
-                            >
-                              Send
-                            </button>
-                          )}
-
-                          {/* Accept (Sent only) */}
-                          {isSent && canRespond && (
-                            <button
-                              type="button"
-                              onClick={() => openRespondModal(offer, 'accept')}
-                              className="px-2.5 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 rounded-md transition"
-                            >
-                              Accept
-                            </button>
-                          )}
-
-                          {/* Reject (Sent only) */}
-                          {isSent && canRespond && (
-                            <button
-                              type="button"
-                              onClick={() => openRespondModal(offer, 'reject')}
-                              className="px-2.5 py-1 text-xs font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 dark:text-rose-300 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 rounded-md transition"
-                            >
-                              Reject
-                            </button>
-                          )}
-
-                          {/* Edit (Draft only) */}
-                          {isDraft && canUpdate && (
-                            <button
-                              type="button"
-                              onClick={() => openEditModal(offer)}
-                              className="px-2 py-1 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 dark:text-amber-400 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 rounded-md transition"
-                              title="Edit Draft"
-                            >
-                              Edit
-                            </button>
-                          )}
-
-                          {/* Delete (Draft only, Super Admin & HR Admin only) */}
-                          {isDraft && canDelete && (
-                            <button
-                              type="button"
-                              onClick={() => openDeleteModal(offer)}
-                              className="px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40 rounded-md transition"
-                              title="Delete Draft"
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+      {/* FILTERS */}
+      <div className="filters-bar">
+        <div className="filter-group">
+          <label className="filter-label">Search offers</label>
+          <input 
+            type="text" 
+            placeholder="Offer code, candidate name..." 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)} 
+            className="filter-input" 
+          />
         </div>
+        <div className="filter-group">
+          <label className="filter-label">Status</label>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="filter-select">
+            <option value="">All Statuses</option>
+            {OFFER_STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
+          </select>
+        </div>
+        <div className="filter-group">
+          <label className="filter-label">Offer Date From</label>
+          <input type="date" value={fromDateFilter} onChange={(e) => setFromDateFilter(e.target.value)} className="filter-input" />
+        </div>
+        <div className="filter-group">
+          <label className="filter-label">Offer Date To</label>
+          <input type="date" value={toDateFilter} onChange={(e) => setToDateFilter(e.target.value)} className="filter-input" />
+        </div>
+        <div className="filter-group" style={{ display: 'flex', justifyContent: 'flex-end', height: '100%', alignItems: 'end' }}>
+          <button className="btn-secondary" onClick={handleResetFilters} style={{ width: '100%' }}>
+            Clear All
+          </button>
+        </div>
+      </div>
 
+      {/* TABLE */}
+      <div className="table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Offer Code</th>
+              <th>Candidate</th>
+              <th>Designation</th>
+              <th>Salary</th>
+              <th>Joining Date</th>
+              <th style={{ textAlign: 'center' }}>Status</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan="7">
+                  <div className="state-container">
+                    <p>Loading offer letters...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : offerLetters.length === 0 ? (
+              <tr>
+                <td colSpan="7">
+                  <div className="state-container">
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-muted)' }}>
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                      </svg>
+                    </div>
+                    <h3>No offer letters found</h3>
+                    <p>Get started by creating an offer for a Hired candidate.</p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              offerLetters.map(offer => {
+                const isDraft = offer.offer_status === 'Draft';
+                const isSent  = offer.offer_status === 'Sent';
+                return (
+                  <tr key={offer.id}>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{offer.offer_code}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{fmtDate(offer.offer_date)}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{candidateName(offer.candidate)}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{offer.candidate?.email || '—'}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{offer.designation || '—'}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{offer.employment_type}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{fmtSalary(offer.salary_amount, offer.salary_currency)}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{offer.salary_frequency}</div>
+                    </td>
+                    <td>
+                      <div style={{ color: 'var(--text-primary)' }}>{fmtDate(offer.joining_date)}</div>
+                      {offer.expiry_date && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Exp: {fmtDate(offer.expiry_date)}</div>}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <StatusBadge status={offer.offer_status} />
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <button className="btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => openDetailModal(offer)}>
+                          View
+                        </button>
+                        {canDownload && (
+                          <button className="btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} disabled={downloadingId === offer.id} onClick={() => handleDownload(offer)}>
+                            {downloadingId === offer.id ? '...' : 'PDF'}
+                          </button>
+                        )}
+                        {isDraft && canUpdate && (
+                          <button className="btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => openEditModal(offer)}>
+                            Edit
+                          </button>
+                        )}
+                        {isDraft && canSend && (
+                          <button className="btn-primary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => openSendModal(offer)}>
+                            Send
+                          </button>
+                        )}
+                        {isSent && canRespond && (
+                          <button className="btn-success" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => openRespondModal(offer, 'accept')}>
+                            Accept
+                          </button>
+                        )}
+                        {isSent && canRespond && (
+                          <button className="btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => openRespondModal(offer, 'reject')}>
+                            Reject
+                          </button>
+                        )}
+                        {isSent && canRespond && (
+                          <button className="btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => openRespondModal(offer, 'withdraw')}>
+                            Withdraw
+                          </button>
+                        )}
+                        {isDraft && canDelete && (
+                          <button className="btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => openDeleteModal(offer)}>
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+        
         {/* Pagination */}
         {pagination.total > 0 && (
-          <div className="px-4 py-3 bg-white border-t border-slate-200 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between">
-            <div className="text-xs text-slate-500 dark:text-slate-400">
-              Showing <span className="font-semibold text-slate-700 dark:text-slate-200">{((pagination.currentPage - 1) * pagination.perPage) + 1}</span> to{' '}
-              <span className="font-semibold text-slate-700 dark:text-slate-200">
-                {Math.min(pagination.currentPage * pagination.perPage, pagination.total)}
-              </span> of <span className="font-semibold text-slate-700 dark:text-slate-200">{pagination.total}</span> offers
+          <div className="pagination-bar">
+            <div className="pagination-info">
+              Showing {((pagination.currentPage - 1) * pagination.perPage) + 1} to {Math.min(pagination.currentPage * pagination.perPage, pagination.total)} of {pagination.total} offers
             </div>
-            <div className="inline-flex gap-1">
-              <button
-                type="button"
-                disabled={pagination.currentPage <= 1}
-                onClick={() => fetchOfferLetters(pagination.currentPage - 1)}
-                className="px-3 py-1 text-xs font-medium text-slate-700 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-              >
+            <div className="pagination-btns">
+              <button className="pagination-btn" disabled={pagination.currentPage <= 1} onClick={() => fetchOfferLetters(pagination.currentPage - 1)}>
                 Previous
               </button>
-              <button
-                type="button"
-                disabled={pagination.currentPage >= pagination.lastPage}
-                onClick={() => fetchOfferLetters(pagination.currentPage + 1)}
-                className="px-3 py-1 text-xs font-medium text-slate-700 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-              >
+              <button className="pagination-btn" disabled={pagination.currentPage >= pagination.lastPage} onClick={() => fetchOfferLetters(pagination.currentPage + 1)}>
                 Next
               </button>
             </div>
@@ -800,621 +536,330 @@ const OfferLetters = () => {
 
       {/* CREATE / EDIT MODAL */}
       {isFormModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-2xl my-8 bg-white rounded-2xl shadow-xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  {activeOffer ? `Edit Draft Offer (${activeOffer.offer_code})` : 'Create New Offer Letter'}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Offers can only be generated for candidates with 'Hired' status.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsFormModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold"
-              >
-                &times;
+        <div className="modal-overlay">
+          <div className="modal-card" style={{ maxWidth: '800px' }}>
+            <div className="modal-header">
+              <h3>{activeOffer ? `Edit Draft Offer - ${activeOffer.offer_code}` : 'Create Offer Letter'}</h3>
+              <button onClick={() => setIsFormModalOpen(false)} style={{ fontSize: '1.25rem', cursor: 'pointer', border: 'none', background: 'none' }}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <form id="offerForm" onSubmit={handleFormSubmit}>
+                
+                <h4 style={{ marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 600 }}>Candidate & Job Information</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div className="filter-group">
+                    <label className="filter-label">Candidate *</label>
+                    {activeOffer ? (
+                      <input type="text" disabled value={`${candidateName(activeOffer.candidate)} (${activeOffer.candidate?.candidate_code || ''})`} className="form-control" style={{ backgroundColor: 'var(--bg-surface-hover)' }} />
+                    ) : (
+                      <select value={formData.candidate_id} onChange={handleCandidateChange} required className="form-control">
+                        <option value="">Select a Hired candidate...</option>
+                        {hiredCandidates.map(c => <option key={c.id} value={c.id}>{c.first_name} {c.last_name} — {c.job_opening?.title || 'N/A'}</option>)}
+                      </select>
+                    )}
+                    {formErrors.candidate_id && <span style={{ color: 'red', fontSize: '0.75rem' }}>{formErrors.candidate_id[0]}</span>}
+                  </div>
+                  <div className="filter-group">
+                    <label className="filter-label">Job Opening *</label>
+                    <select value={formData.job_opening_id} disabled className="form-control" style={{ backgroundColor: 'var(--bg-surface-hover)' }}>
+                      <option value="">Auto-bound from candidate</option>
+                      {jobOpenings.map(j => <option key={j.id} value={j.id}>{j.title} ({j.job_code})</option>)}
+                    </select>
+                  </div>
+                  <div className="filter-group">
+                    <label className="filter-label">Designation *</label>
+                    <input type="text" required value={formData.designation} onChange={(e) => setFormData({ ...formData, designation: e.target.value })} className="form-control" />
+                    {formErrors.designation && <span style={{ color: 'red', fontSize: '0.75rem' }}>{formErrors.designation[0]}</span>}
+                  </div>
+                  <div className="filter-group">
+                    <label className="filter-label">Department</label>
+                    <select value={formData.department_id} disabled className="form-control" style={{ backgroundColor: 'var(--bg-surface-hover)' }}>
+                      <option value="">Auto-bound</option>
+                      {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <h4 style={{ marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 600 }}>Employment Details</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div className="filter-group">
+                    <label className="filter-label">Employment Type *</label>
+                    <select value={formData.employment_type} onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })} className="form-control">
+                      {EMPLOYMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div className="filter-group">
+                    <label className="filter-label">Work Location</label>
+                    <input type="text" value={formData.work_location} onChange={(e) => setFormData({ ...formData, work_location: e.target.value })} className="form-control" />
+                  </div>
+                  <div className="filter-group">
+                    <label className="filter-label">Offer Date *</label>
+                    <input type="date" required value={formData.offer_date} onChange={(e) => setFormData({ ...formData, offer_date: e.target.value })} className="form-control" />
+                    {formErrors.offer_date && <span style={{ color: 'red', fontSize: '0.75rem' }}>{formErrors.offer_date[0]}</span>}
+                  </div>
+                  <div className="filter-group">
+                    <label className="filter-label">Joining Date *</label>
+                    <input type="date" required value={formData.joining_date} onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })} className="form-control" />
+                    {formErrors.joining_date && <span style={{ color: 'red', fontSize: '0.75rem' }}>{formErrors.joining_date[0]}</span>}
+                  </div>
+                  <div className="filter-group">
+                    <label className="filter-label">Probation (months)</label>
+                    <input type="number" min="0" value={formData.probation_period_months} onChange={(e) => setFormData({ ...formData, probation_period_months: e.target.value })} className="form-control" />
+                  </div>
+                  <div className="filter-group">
+                    <label className="filter-label">Notice Period (days)</label>
+                    <input type="number" min="0" value={formData.notice_period_days} onChange={(e) => setFormData({ ...formData, notice_period_days: e.target.value })} className="form-control" />
+                  </div>
+                </div>
+
+                <h4 style={{ marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 600 }}>Compensation</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div className="filter-group">
+                    <label className="filter-label">Salary Amount *</label>
+                    <input type="number" step="0.01" min="0" required value={formData.salary_amount} onChange={(e) => setFormData({ ...formData, salary_amount: e.target.value })} className="form-control" />
+                    {formErrors.salary_amount && <span style={{ color: 'red', fontSize: '0.75rem' }}>{formErrors.salary_amount[0]}</span>}
+                  </div>
+                  <div className="filter-group">
+                    <label className="filter-label">Currency *</label>
+                    <select value={formData.salary_currency} onChange={(e) => setFormData({ ...formData, salary_currency: e.target.value })} className="form-control">
+                      {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div className="filter-group">
+                    <label className="filter-label">Frequency *</label>
+                    <select value={formData.salary_frequency} onChange={(e) => setFormData({ ...formData, salary_frequency: e.target.value })} className="form-control">
+                      {SALARY_FREQUENCIES.map(f => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <h4 style={{ marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 600 }}>Benefits & Terms</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="filter-group">
+                    <label className="filter-label">Benefits</label>
+                    <textarea rows="3" value={formData.benefits} onChange={(e) => setFormData({ ...formData, benefits: e.target.value })} className="form-control" />
+                  </div>
+                  <div className="filter-group">
+                    <label className="filter-label">Terms & Conditions</label>
+                    <textarea rows="4" value={formData.terms_and_conditions} onChange={(e) => setFormData({ ...formData, terms_and_conditions: e.target.value })} className="form-control" />
+                  </div>
+                </div>
+
+              </form>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setIsFormModalOpen(false)}>Cancel</button>
+              <button form="offerForm" type="submit" className="btn-primary" disabled={submitting}>
+                {submitting ? 'Saving...' : (activeOffer ? 'Update Draft' : 'Create Offer')}
               </button>
             </div>
-
-            <form onSubmit={handleFormSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-              {/* Candidate Selection */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Candidate (Hired status required) <span className="text-rose-500">*</span>
-                </label>
-                {activeOffer ? (
-                  <input
-                    type="text"
-                    disabled
-                    value={`${activeOffer.candidate?.first_name} ${activeOffer.candidate?.last_name} (${activeOffer.candidate?.candidate_code})`}
-                    className="w-full px-3 py-2 text-sm bg-slate-100 border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-500"
-                  />
-                ) : (
-                  <select
-                    value={formData.candidate_id}
-                    onChange={handleCandidateChange}
-                    required
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  >
-                    <option value="">Select eligible Hired candidate...</option>
-                    {hiredCandidates.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.first_name} {c.last_name} — {c.job_opening?.title || 'Position'} ({c.candidate_code})
-                      </option>
-                    ))}
-                  </select>
-                )}
-                {formErrors.candidate_id && (
-                  <p className="text-xs text-rose-600 mt-1">{formErrors.candidate_id[0]}</p>
-                )}
-              </div>
-
-              {/* Job Opening & Department (Locked / Auto-populated) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Job Opening <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={formData.job_opening_id}
-                    disabled
-                    className="w-full px-3 py-2 text-sm bg-slate-100 border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-600 dark:text-slate-400"
-                  >
-                    <option value="">Auto-bound from candidate</option>
-                    {jobOpenings.map(j => (
-                      <option key={j.id} value={j.id}>{j.title} ({j.job_code})</option>
-                    ))}
-                  </select>
-                  {formErrors.job_opening_id && (
-                    <p className="text-xs text-rose-600 mt-1">{formErrors.job_opening_id[0]}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Department
-                  </label>
-                  <select
-                    value={formData.department_id}
-                    disabled
-                    className="w-full px-3 py-2 text-sm bg-slate-100 border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-600 dark:text-slate-400"
-                  >
-                    <option value="">Auto-bound from Job Opening</option>
-                    {departments.map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Position Title & Employment Type */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Position Title <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.position_title}
-                    onChange={(e) => setFormData({ ...formData, position_title: e.target.value })}
-                    placeholder="e.g. Senior Software Engineer"
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  />
-                  {formErrors.position_title && (
-                    <p className="text-xs text-rose-600 mt-1">{formErrors.position_title[0]}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Employment Type <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={formData.employment_type}
-                    onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  >
-                    {EMPLOYMENT_TYPES.map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Compensation */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Base Salary <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    required
-                    value={formData.base_salary}
-                    onChange={(e) => setFormData({ ...formData, base_salary: e.target.value })}
-                    placeholder="e.g. 95000"
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  />
-                  {formErrors.base_salary && (
-                    <p className="text-xs text-rose-600 mt-1">{formErrors.base_salary[0]}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Currency
-                  </label>
-                  <input
-                    type="text"
-                    maxLength="3"
-                    value={formData.currency}
-                    onChange={(e) => setFormData({ ...formData, currency: e.target.value.toUpperCase() })}
-                    placeholder="USD"
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none uppercase"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Frequency
-                  </label>
-                  <select
-                    value={formData.salary_period}
-                    onChange={(e) => setFormData({ ...formData, salary_period: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  >
-                    {SALARY_PERIODS.map(p => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Dates */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Offer Date <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.offer_date}
-                    onChange={(e) => setFormData({ ...formData, offer_date: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  />
-                  {formErrors.offer_date && (
-                    <p className="text-xs text-rose-600 mt-1">{formErrors.offer_date[0]}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Joining Date <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.joining_date}
-                    onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  />
-                  {formErrors.joining_date && (
-                    <p className="text-xs text-rose-600 mt-1">{formErrors.joining_date[0]}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Expiry Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.expiry_date}
-                    onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  />
-                  {formErrors.expiry_date && (
-                    <p className="text-xs text-rose-600 mt-1">{formErrors.expiry_date[0]}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Special Allowances */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Special Allowances / Bonus Details
-                </label>
-                <textarea
-                  rows="2"
-                  value={formData.special_allowances}
-                  onChange={(e) => setFormData({ ...formData, special_allowances: e.target.value })}
-                  placeholder="e.g. Sign-on bonus $5,000; Annual performance bonus up to 10%."
-                  className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
-
-              {/* Terms and Conditions */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Terms & Conditions
-                </label>
-                <textarea
-                  rows="3"
-                  value={formData.terms_and_conditions}
-                  onChange={(e) => setFormData({ ...formData, terms_and_conditions: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
-
-              {/* Modal Actions */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setIsFormModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition shadow-sm disabled:opacity-50 inline-flex items-center gap-2"
-                >
-                  {submitting && (
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                    </svg>
-                  )}
-                  {activeOffer ? 'Update Draft' : 'Save Offer Draft'}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
 
-      {/* DETAIL MODAL */}
+      {/* DETAILS MODAL */}
       {isDetailModalOpen && activeOffer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-2xl my-8 bg-white rounded-2xl shadow-xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-sm font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded border border-indigo-200 dark:border-indigo-800">
-                  {activeOffer.offer_code}
-                </span>
-                {getStatusBadge(activeOffer.offer_status)}
+        <div className="modal-overlay">
+          <div className="modal-card" style={{ maxWidth: '800px' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <h3 style={{ margin: 0 }}>Offer Details - {activeOffer.offer_code}</h3>
+                <StatusBadge status={activeOffer.offer_status} />
               </div>
-              <button
-                type="button"
-                onClick={() => setIsDetailModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold"
-              >
-                &times;
-              </button>
+              <button onClick={() => setIsDetailModalOpen(false)} style={{ fontSize: '1.25rem', cursor: 'pointer', border: 'none', background: 'none' }}>&times;</button>
             </div>
+            <div className="modal-body">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                
+                {/* Candidate & Position */}
+                <div>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 600, borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Candidate & Position</h4>
+                  <div style={{ display: 'grid', gap: '0.75rem' }}>
+                    <div>
+                      <div className="filter-label">Candidate</div>
+                      <div style={{ fontSize: '0.95rem' }}>{candidateName(activeOffer.candidate)}</div>
+                    </div>
+                    <div>
+                      <div className="filter-label">Job Opening</div>
+                      <div style={{ fontSize: '0.95rem' }}>{activeOffer.job_opening?.title || '—'}</div>
+                    </div>
+                    <div>
+                      <div className="filter-label">Designation</div>
+                      <div style={{ fontSize: '0.95rem' }}>{activeOffer.designation || '—'}</div>
+                    </div>
+                    <div>
+                      <div className="filter-label">Department</div>
+                      <div style={{ fontSize: '0.95rem' }}>{activeOffer.department?.name || activeOffer.job_opening?.department?.name || '—'}</div>
+                    </div>
+                  </div>
+                </div>
 
-            {/* Modal Content */}
-            <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-              {/* Candidate & Role Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                {/* Employment Details */}
                 <div>
-                  <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Candidate</p>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
-                    {activeOffer.candidate?.first_name} {activeOffer.candidate?.last_name}
-                  </p>
-                  <p className="text-xs text-slate-500">{activeOffer.candidate?.email}</p>
-                  <p className="text-xs text-slate-400 mt-1">Code: {activeOffer.candidate?.candidate_code}</p>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 600, borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Employment Details</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <div className="filter-label">Employment Type</div>
+                      <div style={{ fontSize: '0.95rem' }}>{activeOffer.employment_type}</div>
+                    </div>
+                    <div>
+                      <div className="filter-label">Work Location</div>
+                      <div style={{ fontSize: '0.95rem' }}>{activeOffer.work_location || '—'}</div>
+                    </div>
+                    <div>
+                      <div className="filter-label">Probation Period</div>
+                      <div style={{ fontSize: '0.95rem' }}>{activeOffer.probation_period_months ? `${activeOffer.probation_period_months} months` : '—'}</div>
+                    </div>
+                    <div>
+                      <div className="filter-label">Notice Period</div>
+                      <div style={{ fontSize: '0.95rem' }}>{activeOffer.notice_period_days ? `${activeOffer.notice_period_days} days` : '—'}</div>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Compensation */}
                 <div>
-                  <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Position & Department</p>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{activeOffer.position_title}</p>
-                  <p className="text-xs text-slate-500">{activeOffer.department?.name || activeOffer.job_opening?.department?.name || 'Department'}</p>
-                  <p className="text-xs text-slate-400 mt-1">Opening: {activeOffer.job_opening?.title} ({activeOffer.job_opening?.job_code})</p>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 600, borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Compensation</h4>
+                  <div style={{ display: 'grid', gap: '0.75rem' }}>
+                    <div>
+                      <div className="filter-label">Salary</div>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary-color)' }}>{fmtSalary(activeOffer.salary_amount, activeOffer.salary_currency)}</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>per {activeOffer.salary_frequency.toLowerCase()}</div>
+                    </div>
+                    <div>
+                      <div className="filter-label">Benefits</div>
+                      <div style={{ fontSize: '0.95rem', whiteSpace: 'pre-wrap' }}>{activeOffer.benefits || '—'}</div>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Timeline & Response */}
+                <div>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 600, borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Timeline & Response</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <div className="filter-label">Offer Date</div>
+                      <div style={{ fontSize: '0.95rem' }}>{fmtDate(activeOffer.offer_date)}</div>
+                    </div>
+                    <div>
+                      <div className="filter-label">Joining Date</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 600 }}>{fmtDate(activeOffer.joining_date)}</div>
+                    </div>
+                    <div>
+                      <div className="filter-label">Sent Date</div>
+                      <div style={{ fontSize: '0.95rem' }}>{fmtDate(activeOffer.sent_at)}</div>
+                    </div>
+                    <div>
+                      <div className="filter-label">Responded Date</div>
+                      <div style={{ fontSize: '0.95rem' }}>{fmtDate(activeOffer.responded_at)}</div>
+                    </div>
+                    {activeOffer.expiry_date && (
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <div className="filter-label" style={{ color: 'var(--badge-danger)' }}>Expiry Date</div>
+                        <div style={{ fontSize: '0.95rem' }}>{fmtDate(activeOffer.expiry_date)}</div>
+                      </div>
+                    )}
+                    {activeOffer.response_remarks && (
+                      <div style={{ gridColumn: '1 / -1', marginTop: '0.5rem', padding: '0.75rem', backgroundColor: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)' }}>
+                        <div className="filter-label">Response Remarks</div>
+                        <div style={{ fontSize: '0.95rem', fontStyle: 'italic', marginTop: '0.25rem' }}>"{activeOffer.response_remarks}"</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Terms */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 600, borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Terms & Conditions</h4>
+                  <div style={{ fontSize: '0.95rem', whiteSpace: 'pre-wrap', backgroundColor: 'var(--bg-surface-hover)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+                    {activeOffer.terms_and_conditions || 'Standard company terms apply.'}
+                  </div>
+                </div>
+
               </div>
-
-              {/* Compensation Details */}
-              <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/60 dark:border-emerald-900/40">
-                <p className="text-xs text-emerald-800 dark:text-emerald-300 uppercase tracking-wider font-semibold">Compensation Package</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-                  <div>
-                    <span className="text-xs text-slate-500">Base Salary:</span>
-                    <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
-                      {activeOffer.currency} {Number(activeOffer.base_salary).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-slate-500">Frequency:</span>
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{activeOffer.salary_period}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-slate-500">Type:</span>
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{activeOffer.employment_type}</p>
-                  </div>
-                </div>
-                {activeOffer.special_allowances && (
-                  <div className="mt-3 pt-2 border-t border-emerald-200/40 dark:border-emerald-900/30">
-                    <span className="text-xs font-semibold text-emerald-900 dark:text-emerald-300">Special Allowances:</span>
-                    <p className="text-xs text-slate-700 dark:text-slate-300 mt-0.5 whitespace-pre-line">{activeOffer.special_allowances}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Dates Timeline */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs">
-                <div>
-                  <span className="text-slate-400 block">Offer Date:</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">{activeOffer.offer_date ? new Date(activeOffer.offer_date).toLocaleDateString() : '—'}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block">Joining Date:</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">{activeOffer.joining_date ? new Date(activeOffer.joining_date).toLocaleDateString() : '—'}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block">Sent At:</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">{activeOffer.sent_at ? new Date(activeOffer.sent_at).toLocaleString() : 'Not Sent'}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block">Expiry Date:</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">{activeOffer.expiry_date ? new Date(activeOffer.expiry_date).toLocaleDateString() : 'No Expiry'}</span>
-                </div>
-              </div>
-
-              {/* Response Remarks if available */}
-              {activeOffer.response_remarks && (
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Response Remarks ({activeOffer.responded_at ? new Date(activeOffer.responded_at).toLocaleString() : ''}):
-                  </span>
-                  <p className="text-slate-600 dark:text-slate-300 whitespace-pre-line">{activeOffer.response_remarks}</p>
-                </div>
-              )}
-
-              {/* Terms & Conditions */}
-              {activeOffer.terms_and_conditions && (
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Terms & Conditions:</span>
-                  <p className="text-slate-600 dark:text-slate-300 whitespace-pre-line">{activeOffer.terms_and_conditions}</p>
-                </div>
-              )}
             </div>
-
-            {/* Modal Actions */}
-            <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                {canDownload && (
-                  <button
-                    type="button"
-                    onClick={() => handleDownload(activeOffer)}
-                    disabled={downloadingId === activeOffer.id}
-                    className="px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:text-indigo-400 dark:bg-indigo-950/40 rounded-lg inline-flex items-center gap-1.5 transition"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Download Official PDF
-                  </button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                {activeOffer.offer_status === 'Draft' && canSend && (
-                  <button
-                    type="button"
-                    onClick={() => { setIsDetailModalOpen(false); openSendModal(activeOffer); }}
-                    className="px-3 py-1.5 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-lg shadow-xs transition"
-                  >
-                    Send to Candidate
-                  </button>
-                )}
-
-                {activeOffer.offer_status === 'Sent' && canRespond && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => { setIsDetailModalOpen(false); openRespondModal(activeOffer, 'accept'); }}
-                      className="px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition"
-                    >
-                      Mark Accepted
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setIsDetailModalOpen(false); openRespondModal(activeOffer, 'reject'); }}
-                      className="px-3 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs transition"
-                    >
-                      Mark Rejected
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setIsDetailModalOpen(false); openRespondModal(activeOffer, 'withdraw'); }}
-                      className="px-3 py-1.5 text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/50 dark:text-amber-300 rounded-lg transition"
-                    >
-                      Withdraw Offer
-                    </button>
-                  </>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => setIsDetailModalOpen(false)}
-                  className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-200 hover:bg-slate-300 dark:text-slate-300 dark:bg-slate-800 rounded-lg transition"
-                >
-                  Close
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setIsDetailModalOpen(false)}>Close</button>
+              {canDownload && (
+                <button className="btn-secondary" disabled={downloadingId === activeOffer.id} onClick={() => handleDownload(activeOffer)}>
+                  {downloadingId === activeOffer.id ? 'Downloading...' : 'Download PDF'}
                 </button>
+              )}
+              {activeOffer.offer_status === 'Draft' && canSend && (
+                <button className="btn-primary" onClick={() => { setIsDetailModalOpen(false); openSendModal(activeOffer); }}>Send Offer</button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ACTION MODALS */}
+      {/* Send Modal */}
+      {isSendModalOpen && activeOffer && (
+        <div className="modal-overlay">
+          <div className="modal-card" style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3>Send Offer Letter</h3>
+              <button onClick={() => setIsSendModalOpen(false)} style={{ fontSize: '1.25rem', cursor: 'pointer', border: 'none', background: 'none' }}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <p>Are you sure you want to send offer <strong>{activeOffer.offer_code}</strong> to <strong>{candidateName(activeOffer.candidate)}</strong>?</p>
+              <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>The offer status will change to "Sent" and an email notification will be triggered.</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setIsSendModalOpen(false)}>Cancel</button>
+              <button className="btn-primary" onClick={handleSend} disabled={actionLoading}>{actionLoading ? 'Sending...' : 'Confirm Send'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Respond Modal */}
+      {isRespondModalOpen && activeOffer && (
+        <div className="modal-overlay">
+          <div className="modal-card" style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3>{respondAction === 'accept' ? 'Accept Offer' : respondAction === 'reject' ? 'Reject Offer' : 'Withdraw Offer'}</h3>
+              <button onClick={() => setIsRespondModalOpen(false)} style={{ fontSize: '1.25rem', cursor: 'pointer', border: 'none', background: 'none' }}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <p>Record {respondAction} for offer <strong>{activeOffer.offer_code}</strong>.</p>
+              <div className="filter-group" style={{ marginTop: '1rem' }}>
+                <label className="filter-label">Remarks {respondAction === 'reject' && '*'}</label>
+                <textarea rows="3" value={remarks} onChange={(e) => setRemarks(e.target.value)} className="form-control" placeholder={`Reason for ${respondAction}...`} />
+                {remarksError && <p style={{ color: 'red', fontSize: '0.75rem', marginTop: '0.25rem' }}>{remarksError}</p>}
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* SEND CONFIRMATION MODAL */}
-      {isSendModalOpen && activeOffer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4">
-            <div className="w-12 h-12 rounded-full bg-sky-100 dark:bg-sky-950/60 flex items-center justify-center text-sky-600 dark:text-sky-400 mx-auto">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </div>
-            <div className="text-center">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                Send Offer Letter {activeOffer.offer_code}?
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                This will finalize the offer document and transition status from <strong>Draft</strong> to <strong>Sent</strong>. The candidate will be notified.
-              </p>
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsSendModalOpen(false)}
-                className="px-4 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-300 dark:bg-slate-800 rounded-lg transition"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={actionLoading}
-                onClick={handleSend}
-                className="px-4 py-2 text-xs font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-lg shadow-sm disabled:opacity-50 inline-flex items-center gap-2"
-              >
-                {actionLoading && (
-                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                )}
-                Confirm & Send
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setIsRespondModalOpen(false)}>Cancel</button>
+              <button className={respondAction === 'accept' ? 'btn-success' : respondAction === 'reject' ? 'btn-danger' : 'btn-secondary'} onClick={handleRespond} disabled={actionLoading}>
+                {actionLoading ? 'Processing...' : `Confirm ${respondAction}`}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* RESPOND MODAL (Accept / Reject / Withdraw) */}
-      {isRespondModalOpen && activeOffer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4">
-            <div className="text-center">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white capitalize">
-                {respondAction === 'accept' && 'Mark Offer as Accepted'}
-                {respondAction === 'reject' && 'Mark Offer as Rejected'}
-                {respondAction === 'withdraw' && 'Withdraw Offer Letter'}
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                {respondAction === 'accept' && 'Record the candidate’s formal acceptance. Note: Candidate status remains Hired.'}
-                {respondAction === 'reject' && 'Record the candidate’s rejection. Mandatory reason/remarks required.'}
-                {respondAction === 'withdraw' && 'Withdraw the issued offer letter from the candidate.'}
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Remarks / Reason {respondAction === 'reject' && <span className="text-rose-500">* (Required)</span>}
-              </label>
-              <textarea
-                rows="3"
-                value={remarks}
-                onChange={(e) => {
-                  setRemarks(e.target.value);
-                  if (remarksError) setRemarksError('');
-                }}
-                placeholder={
-                  respondAction === 'reject'
-                    ? 'State reasons for candidate offer rejection...'
-                    : 'Add optional internal notes or remarks...'
-                }
-                className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              />
-              {remarksError && <p className="text-xs text-rose-600 mt-1">{remarksError}</p>}
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsRespondModalOpen(false)}
-                className="px-4 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-300 dark:bg-slate-800 rounded-lg transition"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={actionLoading}
-                onClick={handleRespond}
-                className={`px-4 py-2 text-xs font-medium text-white rounded-lg shadow-sm disabled:opacity-50 inline-flex items-center gap-2 ${
-                  respondAction === 'accept'
-                    ? 'bg-emerald-600 hover:bg-emerald-700'
-                    : respondAction === 'reject'
-                    ? 'bg-rose-600 hover:bg-rose-700'
-                    : 'bg-amber-600 hover:bg-amber-700'
-                }`}
-              >
-                {actionLoading && (
-                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                )}
-                Confirm {respondAction}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* DELETE CONFIRMATION MODAL */}
+      {/* Delete Modal */}
       {isDeleteModalOpen && activeOffer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4">
-            <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-950/60 flex items-center justify-center text-rose-600 dark:text-rose-400 mx-auto">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+        <div className="modal-overlay">
+          <div className="modal-card" style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3 style={{ color: 'var(--badge-danger)' }}>Delete Offer Letter</h3>
+              <button onClick={() => setIsDeleteModalOpen(false)} style={{ fontSize: '1.25rem', cursor: 'pointer', border: 'none', background: 'none' }}>&times;</button>
             </div>
-            <div className="text-center">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                Delete Draft Offer?
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Are you sure you want to delete draft offer <strong>{activeOffer.offer_code}</strong>? This action cannot be undone.
-              </p>
+            <div className="modal-body">
+              <p>Are you sure you want to permanently delete offer <strong>{activeOffer.offer_code}</strong>?</p>
+              <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>This action cannot be undone.</p>
             </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="px-4 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-300 dark:bg-slate-800 rounded-lg transition"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={actionLoading}
-                onClick={handleDelete}
-                className="px-4 py-2 text-xs font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm disabled:opacity-50 inline-flex items-center gap-2"
-              >
-                {actionLoading && (
-                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                )}
-                Delete Offer
-              </button>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setIsDeleteModalOpen(false)}>Cancel</button>
+              <button className="btn-danger" onClick={handleDelete} disabled={actionLoading}>{actionLoading ? 'Deleting...' : 'Delete Permanently'}</button>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 };

@@ -169,6 +169,31 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/offer-letters/{id}/expire', [App\Http\Controllers\OfferLetterController::class, 'expire'])->middleware('permission:recruitment.offer_letters.update');
     Route::get('/offer-letters/{id}/download', [App\Http\Controllers\OfferLetterController::class, 'download'])->middleware('permission:recruitment.offer_letters.download|recruitment.offer_letters.view');
 
+    // Employee Onboarding endpoints (Phase 3 Task 8)
+    Route::get('/onboarding', [App\Http\Controllers\OnboardingController::class, 'index'])->middleware('permission:recruitment.onboarding.view');
+    Route::post('/onboarding', [App\Http\Controllers\OnboardingController::class, 'store'])->middleware('permission:recruitment.onboarding.create');
+    Route::get('/onboarding/{id}', [App\Http\Controllers\OnboardingController::class, 'show'])->middleware('permission:recruitment.onboarding.view');
+    Route::put('/onboarding/{id}/cancel', [App\Http\Controllers\OnboardingController::class, 'cancel'])->middleware('permission:recruitment.onboarding.delete');
+    Route::post('/onboarding/{id}/checklist/{itemId}/submit', [App\Http\Controllers\OnboardingController::class, 'submitChecklist'])->middleware('permission:recruitment.onboarding.update');
+    Route::put('/onboarding/{id}/checklist/{itemId}/verify', [App\Http\Controllers\OnboardingController::class, 'verifyChecklist'])->middleware('permission:recruitment.onboarding.verify');
+    Route::put('/onboarding/{id}/checklist/{itemId}/reject', [App\Http\Controllers\OnboardingController::class, 'rejectChecklist'])->middleware('permission:recruitment.onboarding.verify');
+    Route::put('/onboarding/{id}/it-account', [App\Http\Controllers\OnboardingController::class, 'updateItAccount'])->middleware('permission:recruitment.onboarding.update');
+    Route::put('/onboarding/{id}/laptop-allocation', [App\Http\Controllers\OnboardingController::class, 'updateLaptopAllocation'])->middleware('permission:recruitment.onboarding.update');
+    Route::post('/onboarding/{id}/create-employee', [App\Http\Controllers\OnboardingController::class, 'createEmployee'])->middleware('permission:recruitment.onboarding.complete|employees.create');
+    Route::put('/onboarding/{id}/complete', [App\Http\Controllers\OnboardingController::class, 'complete'])->middleware('permission:recruitment.onboarding.complete');
+    Route::get('/onboarding/{id}/checklist/{itemId}/download', [App\Http\Controllers\OnboardingController::class, 'downloadDocument'])->middleware('permission:recruitment.onboarding.view');
+
+    // Recruitment Reports endpoints (Phase 3 Final Task)
+    Route::middleware('permission:recruitment.reports.view')->group(function () {
+        Route::get('/reports/recruitment/applications',  [App\Http\Controllers\RecruitmentReportController::class, 'applications']);
+        Route::get('/reports/recruitment/shortlisted',   [App\Http\Controllers\RecruitmentReportController::class, 'shortlisted']);
+        Route::get('/reports/recruitment/interviews',    [App\Http\Controllers\RecruitmentReportController::class, 'interviews']);
+        Route::get('/reports/recruitment/selected',      [App\Http\Controllers\RecruitmentReportController::class, 'selected']);
+        Route::get('/reports/recruitment/time-to-hire',  [App\Http\Controllers\RecruitmentReportController::class, 'timeToHire']);
+        Route::get('/reports/recruitment/hiring-cost',   [App\Http\Controllers\RecruitmentReportController::class, 'hiringCost']);
+    });
+
+
     // RBAC Test Endpoint
     Route::get('/rbac-test', function (Request $request) {
         return response()->json([

@@ -209,4 +209,12 @@ class Employee extends Model
     {
         return $this->hasMany(InterviewFeedback::class, 'interviewer_employee_id');
     }
+
+    /**
+     * Get the onboarding record associated with this employee.
+     */
+    public function onboarding(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Onboarding::class);
+    }
 }

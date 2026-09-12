@@ -26,6 +26,37 @@ export const reportService = {
     });
     return response.data;
   },
+
+  getRecruitmentApplications: async (params = {}) => {
+    const response = await api.get('/reports/recruitment/applications', { params });
+    return response.data;
+  },
+
+  getRecruitmentShortlisted: async (params = {}) => {
+    const response = await api.get('/reports/recruitment/shortlisted', { params });
+    return response.data;
+  },
+
+  getRecruitmentInterviews: async (params = {}) => {
+    const response = await api.get('/reports/recruitment/interviews', { params });
+    return response.data;
+  },
+
+  getRecruitmentSelected: async (params = {}) => {
+    const response = await api.get('/reports/recruitment/selected', { params });
+    return response.data;
+  },
+
+  getRecruitmentTimeToHire: async (params = {}) => {
+    const response = await api.get('/reports/recruitment/time-to-hire', { params });
+    return response.data;
+  },
+
+  getRecruitmentHiringCost: async (params = {}) => {
+    const response = await api.get('/reports/recruitment/hiring-cost', { params });
+    return response.data;
+  },
+
 };
 
 export default reportService;

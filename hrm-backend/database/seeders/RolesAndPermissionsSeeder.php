@@ -48,6 +48,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'recruitment.interviews.view', 'recruitment.interviews.create', 'recruitment.interviews.update', 'recruitment.interviews.delete',
             'recruitment.interview_feedback.view', 'recruitment.interview_feedback.create', 'recruitment.interview_feedback.update', 'recruitment.interview_feedback.delete',
             'recruitment.offer_letters.view', 'recruitment.offer_letters.create', 'recruitment.offer_letters.update', 'recruitment.offer_letters.delete', 'recruitment.offer_letters.send', 'recruitment.offer_letters.respond', 'recruitment.offer_letters.download',
+            'recruitment.onboarding.view', 'recruitment.onboarding.create', 'recruitment.onboarding.update', 'recruitment.onboarding.delete', 'recruitment.onboarding.verify', 'recruitment.onboarding.complete',
+            'recruitment.reports.view',
         ];
 
         // Create or update permissions
@@ -73,6 +75,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'recruitment.interviews.view', 'recruitment.interviews.create', 'recruitment.interviews.update', 'recruitment.interviews.delete',
             'recruitment.interview_feedback.view', 'recruitment.interview_feedback.create', 'recruitment.interview_feedback.update', 'recruitment.interview_feedback.delete',
             'recruitment.offer_letters.view', 'recruitment.offer_letters.create', 'recruitment.offer_letters.update', 'recruitment.offer_letters.delete', 'recruitment.offer_letters.send', 'recruitment.offer_letters.respond', 'recruitment.offer_letters.download',
+            'recruitment.onboarding.view', 'recruitment.onboarding.create', 'recruitment.onboarding.update', 'recruitment.onboarding.delete', 'recruitment.onboarding.verify', 'recruitment.onboarding.complete',
+            'recruitment.reports.view',
             'performance.view', 'performance.manage',
             'training.view', 'training.manage',
             'assets.view', 'assets.manage',
@@ -102,6 +106,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'recruitment.interviews.view', 'recruitment.interviews.create', 'recruitment.interviews.update',
             'recruitment.interview_feedback.view', 'recruitment.interview_feedback.create', 'recruitment.interview_feedback.update',
             'recruitment.offer_letters.view', 'recruitment.offer_letters.create', 'recruitment.offer_letters.update', 'recruitment.offer_letters.send', 'recruitment.offer_letters.respond', 'recruitment.offer_letters.download',
+            'recruitment.reports.view',
             'training.view', 'training.manage',
             'assets.view', 'assets.manage',
             'helpdesk.view', 'helpdesk.manage',

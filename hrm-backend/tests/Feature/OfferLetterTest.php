@@ -611,7 +611,9 @@ class OfferLetterTest extends TestCase
             ->assertOk();
 
         // Ensure no onboarding tables or models were affected
-        $this->assertFalse(\Illuminate\Support\Facades\Schema::hasTable('onboardings'));
+        $this->assertDatabaseMissing('onboardings', [
+            'offer_letter_id' => $offer->id,
+        ]);
     }
 
     public function test_hr_executive_can_create_update_send_and_download(): void

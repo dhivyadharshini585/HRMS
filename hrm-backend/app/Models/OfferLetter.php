@@ -168,4 +168,12 @@ class OfferLetter extends Model
         }
         return $query;
     }
+
+    /**
+     * Get the onboarding process associated with this offer letter.
+     */
+    public function onboarding(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Onboarding::class);
+    }
 }

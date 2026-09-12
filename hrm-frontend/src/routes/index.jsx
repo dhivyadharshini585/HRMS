@@ -38,8 +38,11 @@ import Shifts from '../pages/Shifts';
 import Holidays from '../pages/Holidays';
 import AttendanceReport from '../pages/Reports/AttendanceReport';
 import LeaveReport from '../pages/Reports/LeaveReport';
+import RecruitmentReport from '../pages/Reports/RecruitmentReport';
 import Interviews from '../pages/Interviews';
 import OfferLetters from '../pages/OfferLetters';
+import Onboarding from '../pages/Onboarding';
+import OnboardingDetails from '../pages/Onboarding/Details';
 
 export const router = createBrowserRouter([
   // Auth routes (outside AppLayout, guest only)
@@ -139,9 +142,12 @@ export const router = createBrowserRouter([
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive']} />,
             children: [
               { path: ROUTES.JOBS, element: <Jobs /> },
+              { path: ROUTES.REPORTS_RECRUITMENT, element: <RecruitmentReport /> },
               { path: ROUTES.CANDIDATES, element: <Candidates /> },
               { path: ROUTES.RECRUITMENT, element: <Jobs /> },
               { path: ROUTES.OFFER_LETTERS, element: <OfferLetters /> },
+              { path: ROUTES.ONBOARDING, element: <Onboarding /> },
+              { path: ROUTES.ONBOARDING_DETAILS, element: <OnboardingDetails /> },
             ]
           },
  

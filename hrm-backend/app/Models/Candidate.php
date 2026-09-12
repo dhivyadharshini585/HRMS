@@ -176,6 +176,14 @@ class Candidate extends Model
     }
 
     /**
+     * Get the onboarding process for this candidate.
+     */
+    public function onboarding(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Onboarding::class);
+    }
+
+    /**
      * The "booted" method of the model.
      * Automatically and atomically records initial status history on creation.
      */

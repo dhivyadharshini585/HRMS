@@ -20,6 +20,8 @@ export const ROUTES = {
   CANDIDATES: '/candidates',
   INTERVIEWS: '/interviews',
   OFFER_LETTERS: '/offer-letters',
+  ONBOARDING: '/onboarding',
+  ONBOARDING_DETAILS: '/onboarding/:id',
   RECRUITMENT: '/recruitment',
   PAYROLL: '/payroll',
   PERFORMANCE: '/performance',
@@ -34,4 +36,5 @@ export const ROUTES = {
   HOLIDAYS: '/holidays',
   REPORTS_ATTENDANCE: '/reports/attendance',
   REPORTS_LEAVE: '/reports/leave',
+  REPORTS_RECRUITMENT: '/reports/recruitment',
 };

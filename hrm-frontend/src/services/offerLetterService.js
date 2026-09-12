@@ -26,12 +26,12 @@ export const deleteOfferLetter = async (id) => {
 };
 
 export const sendOfferLetter = async (id) => {
-  const response = await api.post(`/offer-letters/${id}/send`);
+  const response = await api.patch(`/offer-letters/${id}/send`);
   return response.data;
 };
 
 export const acceptOfferLetter = async (id, response_remarks = '') => {
-  const response = await api.post(`/offer-letters/${id}/accept`, { response_remarks });
+  const response = await api.patch(`/offer-letters/${id}/accept`, { response_remarks });
   return response.data;
 };
 
