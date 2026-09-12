@@ -77,6 +77,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'recruitment.offer_letters.view', 'recruitment.offer_letters.create', 'recruitment.offer_letters.update', 'recruitment.offer_letters.delete', 'recruitment.offer_letters.send', 'recruitment.offer_letters.respond', 'recruitment.offer_letters.download',
             'recruitment.onboarding.view', 'recruitment.onboarding.create', 'recruitment.onboarding.update', 'recruitment.onboarding.delete', 'recruitment.onboarding.verify', 'recruitment.onboarding.complete',
             'recruitment.reports.view',
+            'payroll.view', 'payroll.manage', 'payroll.approve',
             'performance.view', 'performance.manage',
             'training.view', 'training.manage',
             'assets.view', 'assets.manage',

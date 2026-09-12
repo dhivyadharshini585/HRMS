@@ -209,6 +209,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Payslips
     Route::post('/payrolls/{payroll}/payslips', [App\Http\Controllers\PayslipController::class, 'generate'])->middleware('permission:payroll.manage');
     Route::get('/payslips/{payslip}', [App\Http\Controllers\PayslipController::class, 'show']);
+    Route::get('/payslips/{payslip}/download', [App\Http\Controllers\PayslipController::class, 'download']);
 
     // Payroll Reports
     Route::get('/reports/payroll/summary', [App\Http\Controllers\PayrollReportController::class, 'monthlySummary'])->middleware('permission:payroll.view');

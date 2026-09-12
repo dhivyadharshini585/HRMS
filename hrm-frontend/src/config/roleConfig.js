@@ -43,6 +43,7 @@ export const ROLE_NAVIGATION = {
     { path: ROUTES.INTERVIEWS, label: 'Interviews', iconName: 'IconCalendar' },
     { path: ROUTES.OFFER_LETTERS, label: 'Offer Letters', iconName: 'IconFileText' },
     { path: ROUTES.ONBOARDING, label: 'Onboarding', iconName: 'IconUsers' },
+    { path: ROUTES.PAYROLL, label: 'Payroll', iconName: 'IconDollar' },
     { path: ROUTES.PERFORMANCE, label: 'Performance', iconName: 'IconTrendingUp' },
     { path: ROUTES.TRAINING, label: 'Training', iconName: 'IconBook' },
     { path: ROUTES.ASSETS, label: 'Assets', iconName: 'IconPackage' },
