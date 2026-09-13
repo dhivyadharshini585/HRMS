@@ -147,8 +147,39 @@ class DocumentController extends Controller
             return response()->json(['message' => 'You are not authorized to download this document.'], 403);
         }
 
-        if (!Storage::disk('local')->exists($document->file_path)) {
-            return response()->json(['message' => 'Document file not found in storage.'], 404);
+        $fileMissing = !Storage::disk('local')->exists($document->file_path);
+        $isInvalidPdf = !$fileMissing && $document->document_category === 'Certificate' && substr(Storage::disk('local')->get($document->file_path), 0, 4) !== '%PDF';
+
+        if ($fileMissing || $isInvalidPdf) {
+            if ($document->document_category === 'Certificate') {
+                $dir = dirname($document->file_path);
+                if (!Storage::disk('local')->exists($dir)) {
+                    Storage::disk('local')->makeDirectory($dir);
+                }
+
+                $employee = $document->employee;
+                $employeeName = $employee ? trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? '')) : 'Employee';
+
+                $trainingName = preg_replace('/ Certificate$/i', '', $document->document_name);
+                $training = \App\Models\Training::where('training_name', $trainingName)->with('trainer')->first();
+
+                $trainerName = ($training && $training->trainer) ? trim(($training->trainer->first_name ?? '') . ' ' . ($training->trainer->last_name ?? '')) : 'N/A';
+                $startDate = $training->start_date ?? 'N/A';
+                $endDate = $training->end_date ?? 'N/A';
+
+                $pdfBinary = \App\Services\CertificateGenerator::generatePdf([
+                    'employee_name' => $employeeName,
+                    'training_name' => $trainingName,
+                    'trainer_name' => $trainerName,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'completion_status' => 'Completed',
+                ]);
+
+                Storage::disk('local')->put($document->file_path, $pdfBinary);
+            } else {
+                return response()->json(['message' => 'Document file not found in storage.'], 404);
+            }
         }
 
         // Audit Log for Download Access

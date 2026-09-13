@@ -186,6 +186,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/payrolls/{payroll}/payslips', [App\Http\Controllers\PayslipController::class, 'generate'])->middleware('permission:payroll.manage');
     Route::get('/payslips/{payslip}', [App\Http\Controllers\PayslipController::class, 'show']);
 
+    // Phase 5: Performance Management & Training
+    Route::apiResource('performance-cycles', \App\Http\Controllers\PerformanceCycleController::class)->middleware('permission:performance.manage');
+    
+    // For goals, index and show use .view, store/update/destroy are handled inside controller or use manage for generic ones
+    Route::apiResource('performance-goals', \App\Http\Controllers\PerformanceGoalController::class)->middleware('permission:performance.view');
+    
+    Route::apiResource('performance-reviews', \App\Http\Controllers\PerformanceReviewController::class)->middleware('permission:performance.view');
+
+    Route::apiResource('trainings', \App\Http\Controllers\TrainingController::class)->middleware('permission:training.view');
+    Route::apiResource('training-attendees', \App\Http\Controllers\TrainingAttendeeController::class)->middleware('permission:training.view');
+
+    // Performance Reports
+    Route::get('/reports/performance/employee-ratings', [App\Http\Controllers\PerformanceReportController::class, 'employeeRatings'])->middleware('permission:performance.view');
+    Route::get('/reports/performance/department-performance', [App\Http\Controllers\PerformanceReportController::class, 'departmentPerformance'])->middleware('permission:performance.view');
+    Route::get('/reports/performance/goal-completion', [App\Http\Controllers\PerformanceReportController::class, 'goalCompletion'])->middleware('permission:performance.view');
+    Route::get('/reports/performance/training-completion', [App\Http\Controllers\PerformanceReportController::class, 'trainingCompletion'])->middleware('permission:performance.view');
+
     // Payroll Reports
     Route::get('/reports/payroll/summary', [App\Http\Controllers\PayrollReportController::class, 'monthlySummary'])->middleware('permission:payroll.view');
     Route::get('/reports/payroll/department', [App\Http\Controllers\PayrollReportController::class, 'departmentWise'])->middleware('permission:payroll.view');

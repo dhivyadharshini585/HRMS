@@ -23,7 +23,11 @@ export const ROUTES = {
   RECRUITMENT: '/recruitment',
   PAYROLL: '/payroll',
   PERFORMANCE: '/performance',
+  GOALS: '/goals',
+  REVIEWS: '/reviews',
+  MY_PERFORMANCE: '/my-performance',
   TRAINING: '/training',
+  MY_TRAINING: '/my-training',
   ASSETS: '/assets',
   TIMESHEETS: '/timesheets',
   HELPDESK: '/helpdesk',
@@ -35,5 +39,6 @@ export const ROUTES = {
   REPORTS_ATTENDANCE: '/reports/attendance',
   REPORTS_LEAVE: '/reports/leave',
   PAYROLL_REPORTS: '/reports/payroll',
+  REPORTS_PERFORMANCE: '/reports/performance',
   PAYSLIP_VIEW: '/payslips/:id',
 };

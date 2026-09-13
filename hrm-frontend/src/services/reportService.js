@@ -26,6 +26,26 @@ export const reportService = {
     });
     return response.data;
   },
+
+  getEmployeeRatingsReport: async (params = {}) => {
+    const response = await api.get('/reports/performance/employee-ratings', { params });
+    return response.data;
+  },
+
+  getDepartmentPerformanceReport: async (params = {}) => {
+    const response = await api.get('/reports/performance/department-performance', { params });
+    return response.data;
+  },
+
+  getGoalCompletionReport: async (params = {}) => {
+    const response = await api.get('/reports/performance/goal-completion', { params });
+    return response.data;
+  },
+
+  getTrainingCompletionReport: async (params = {}) => {
+    const response = await api.get('/reports/performance/training-completion', { params });
+    return response.data;
+  },
 };
 
 export default reportService;
