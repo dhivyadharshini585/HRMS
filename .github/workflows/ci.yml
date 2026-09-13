@@ -45,6 +45,14 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
+      - name: Prepare Laravel test environment
+        run: |
+          cp .env.example .env
+          mkdir -p storage/framework/cache
+          mkdir -p storage/framework/sessions
+          mkdir -p storage/framework/views
+          php artisan key:generate --force
+
       - name: Run backend tests
         env:
           DB_HOST: 127.0.0.1
@@ -52,7 +60,6 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: root
         run: php artisan test
-
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest
