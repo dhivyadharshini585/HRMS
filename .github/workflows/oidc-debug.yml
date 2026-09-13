@@ -1,0 +1,31 @@
+name: OIDC Debug
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    name: Debug GitHub OIDC
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Get OIDC claims
+        env:
+          AUDIENCE: sts.amazonaws.com
+        run: |
+          set -e
+
+          TOKEN_JSON=$(curl -sS \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUDIENCE")
+
+          ID_TOKEN=$(echo "$TOKEN_JSON" | jq -r '.value')
+
+          echo "$ID_TOKEN" |
+            awk -F. '{print $2}' |
+            base64 -d 2>/dev/null |
+            jq .
