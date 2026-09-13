@@ -106,7 +106,7 @@ export const ROLE_NAVIGATION = {
     { path: ROUTES.LEAVE, label: 'My Leave', iconName: 'IconClock' },
     { path: ROUTES.REPORTS_ATTENDANCE, label: 'Attendance Reports', iconName: 'IconFileText' },
     { path: ROUTES.REPORTS_LEAVE, label: 'Leave Reports', iconName: 'IconFileText' },
-    { path: ROUTES.PERFORMANCE, label: 'My Performance', iconName: 'IconTrendingUp' },
+    { path: ROUTES.MY_PERFORMANCE, label: 'My Performance', iconName: 'IconTrendingUp' },
     { path: ROUTES.MY_TRAINING, label: 'My Training', iconName: 'IconBook' },
     { path: ROUTES.ASSETS, label: 'My Assets', iconName: 'IconPackage' },
     { path: ROUTES.TIMESHEETS, label: 'My Timesheets', iconName: 'IconClock' },

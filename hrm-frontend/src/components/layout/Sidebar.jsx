@@ -4,7 +4,7 @@ import {
   IconDashboard, IconUsers, IconFolder, IconBriefcase,
   IconCalendar, IconClock, IconFileText, IconDollar,
   IconTrendingUp, IconBook, IconPackage, IconHelp, IconShield,
-  IconChevronLeft, IconChevronRight
+  IconChevronLeft, IconChevronRight, IconBarChart
 } from '../common/Icons';
 import { useAuthContext } from '../../context/AuthContext';
 import { ROLE_NAVIGATION } from '../../config/roleConfig';
@@ -23,6 +23,7 @@ const ICONS = {
   IconPackage: <IconPackage />,
   IconHelp: <IconHelp />,
   IconShield: <IconShield />,
+  IconBarChart: <IconBarChart />,
 };
 
 export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) {
