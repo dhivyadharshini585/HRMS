@@ -693,6 +693,46 @@ class PayrollTest extends TestCase
         $this->assertEquals('Engineering', $report[0]['department']);
     }
 
+    public function test_deduction_report_breaks_down_components_correctly()
+    {
+        // createSalaryStructure adds:
+        //   Provident Fund (Deduction) = 6000
+        //   Professional Tax (Deduction) = 2000
+        $this->createSalaryStructure($this->employee);
+        $calculator = app(PayrollCalculationService::class);
+        $calculator->calculateDraft($this->employee, 9, 2026);
+
+        $response = $this->actingAs($this->hrAdmin)->getJson('/api/reports/payroll/deductions?month=9&year=2026');
+
+        $response->assertStatus(200);
+        $data = $response->json();
+
+        // PF should be 6000 (from "Provident Fund" component)
+        $this->assertEquals(6000.0, (float)$data['PF_total']);
+        // Professional Tax should be 2000 (from "Professional Tax" component)
+        $this->assertEquals(2000.0, (float)$data['Professional_Tax_total']);
+        // No ESI, TDS, LOP, or Other in the test structure
+        $this->assertEquals(0, (float)$data['ESI_total']);
+        $this->assertEquals(0, (float)$data['TDS_total']);
+        $this->assertEquals(0, (float)$data['LOP_total']);
+        $this->assertEquals(0, (float)$data['other_deductions_total']);
+    }
+
+    public function test_deduction_report_with_no_payrolls_returns_all_zeros()
+    {
+        $response = $this->actingAs($this->hrAdmin)->getJson('/api/reports/payroll/deductions?month=3&year=2026');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'PF_total' => 0,
+                'ESI_total' => 0,
+                'Professional_Tax_total' => 0,
+                'TDS_total' => 0,
+                'other_deductions_total' => 0,
+                'LOP_total' => 0,
+            ]);
+    }
+
     public function test_unauthorized_roles_cannot_access_payroll_reports()
     {
         $this->actingAs($this->hrExecutive)->getJson('/api/reports/payroll/summary?month=9&year=2026')
