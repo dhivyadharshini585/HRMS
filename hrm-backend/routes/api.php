@@ -27,7 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
             'permissions' => $user->getAllPermissions()->pluck('name'),
         ]);
     });
-    
+
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Lookup endpoints are now handled by DepartmentController@index and DesignationController@index
@@ -213,10 +213,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Phase 5: Performance Management & Training
     Route::apiResource('performance-cycles', \App\Http\Controllers\PerformanceCycleController::class)->middleware('permission:performance.manage');
-    
+
     // For goals, index and show use .view, store/update/destroy are handled inside controller or use manage for generic ones
     Route::apiResource('performance-goals', \App\Http\Controllers\PerformanceGoalController::class)->middleware('permission:performance.view');
-    
+
     Route::apiResource('performance-reviews', \App\Http\Controllers\PerformanceReviewController::class)->middleware('permission:performance.view');
 
     Route::apiResource('trainings', \App\Http\Controllers\TrainingController::class)->middleware('permission:training.view');

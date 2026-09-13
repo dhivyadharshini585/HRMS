@@ -60,7 +60,7 @@ class PerformanceReviewController extends Controller
 
         $user = $request->user();
         $employeeId = $user->employee->id ?? null;
-        
+
         if (!$user->can('performance.manage')) {
             $targetEmployee = Employee::find($validated['employee_id']);
             if (!$targetEmployee || $targetEmployee->manager_id != $employeeId) {

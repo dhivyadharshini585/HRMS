@@ -16,7 +16,7 @@ class PerformanceReviewSeeder extends Seeder
 
         $emp5 = Employee::where('employee_code', 'EMP-005')->first();
         $manager = Employee::where('employee_code', 'EMP-004')->first();
-        
+
         if ($emp5 && $manager) {
             PerformanceReview::firstOrCreate(
                 ['employee_id' => $emp5->id, 'reviewer_id' => $manager->id, 'cycle_id' => $cycle->id],
@@ -37,7 +37,7 @@ class PerformanceReviewSeeder extends Seeder
 
         $emp3 = Employee::where('employee_code', 'EMP-003')->first();
         $hrManager = Employee::where('employee_code', 'EMP-002')->first();
-        
+
         if ($emp3 && $hrManager) {
             PerformanceReview::firstOrCreate(
                 ['employee_id' => $emp3->id, 'reviewer_id' => $hrManager->id, 'cycle_id' => $cycle->id],

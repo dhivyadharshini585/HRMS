@@ -122,7 +122,7 @@ class CertificateGenerator
             <div class='employee-name'>{$employeeName}</div>
             <div class='completion-text'>has successfully completed</div>
             <div class='training-name'>{$trainingName}</div>
-            
+
             <table class='details-table'>
                 <tr>
                     <td class='label'>Trainer:</td>

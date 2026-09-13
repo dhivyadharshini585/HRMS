@@ -58,7 +58,7 @@ class TrainingAttendeeController extends Controller
         $existing = TrainingAttendee::where('training_id', $validated['training_id'])
                                      ->where('employee_id', $validated['employee_id'])
                                      ->first();
-        
+
         if ($existing) {
             return response()->json(['message' => 'Employee is already enrolled in this training'], 422);
         }
@@ -110,17 +110,17 @@ class TrainingAttendeeController extends Controller
                 $training_attendee->load(['training.trainer', 'employee']);
                 $training = $training_attendee->training;
                 $employee = $training_attendee->employee;
-                
+
                 // Check if document already exists
                 $docName = $training->training_name . ' Certificate';
                 $existingDoc = EmployeeDocument::where('employee_id', $training_attendee->employee_id)
                                              ->where('document_category', 'Certificate')
                                              ->where('document_name', $docName)
                                              ->first();
-                
+
                 if (!$existingDoc) {
                     $stubFileName = 'certificates/' . uniqid() . '.pdf';
-                    
+
                     if (!\Illuminate\Support\Facades\Storage::disk('local')->exists('certificates')) {
                         \Illuminate\Support\Facades\Storage::disk('local')->makeDirectory('certificates');
                     }

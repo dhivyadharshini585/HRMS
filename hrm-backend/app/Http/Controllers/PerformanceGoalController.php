@@ -54,7 +54,7 @@ class PerformanceGoalController extends Controller
 
         $user = $request->user();
         $employeeId = $user->employee->id ?? null;
-        
+
         if (!$user->can('performance.manage') && $validated['employee_id'] != $employeeId) {
             $targetEmployee = Employee::find($validated['employee_id']);
             if (!$targetEmployee || $targetEmployee->manager_id != $employeeId) {

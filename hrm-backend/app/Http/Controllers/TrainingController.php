@@ -10,7 +10,7 @@ class TrainingController extends Controller
     public function index(Request $request)
     {
         $query = Training::with(['trainer']);
-        
+
         $trainings = $query->orderBy('start_date', 'desc')->get();
         return response()->json($trainings);
     }
