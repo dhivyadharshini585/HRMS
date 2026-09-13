@@ -233,4 +233,44 @@ class Employee extends Model
     {
         return $this->hasMany(Payroll::class);
     }
+
+    /**
+     * Get the performance goals for this employee.
+     */
+    public function performanceGoals(): HasMany
+    {
+        return $this->hasMany(PerformanceGoal::class);
+    }
+
+    /**
+     * Get the performance reviews for this employee.
+     */
+    public function performanceReviews(): HasMany
+    {
+        return $this->hasMany(PerformanceReview::class);
+    }
+
+    /**
+     * Get the performance reviews conducted by this employee.
+     */
+    public function conductedReviews(): HasMany
+    {
+        return $this->hasMany(PerformanceReview::class, 'reviewer_id');
+    }
+
+    /**
+     * Get the trainings conducted by this employee.
+     */
+    public function trainingsConducted(): HasMany
+    {
+        return $this->hasMany(Training::class, 'trainer_employee_id');
+    }
+
+    /**
+     * Get the training attendances for this employee.
+     */
+    public function trainingAttendances(): HasMany
+    {
+        return $this->hasMany(TrainingAttendee::class);
+    }
 }

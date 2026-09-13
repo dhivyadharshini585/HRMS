@@ -29,7 +29,11 @@ import Payroll from '../pages/Payroll';
 import PayrollReports from '../pages/Payroll/PayrollReports';
 import PayslipView from '../pages/Payroll/PayslipView';
 import Performance from '../pages/Performance';
+import Goals from '../pages/Goals';
+import Reviews from '../pages/Reviews';
+import MyPerformance from '../pages/MyPerformance';
 import Training from '../pages/Training';
+import MyTraining from '../pages/MyTraining';
 import Assets from '../pages/Assets';
 import Timesheets from '../pages/Timesheets';
 import Helpdesk from '../pages/Helpdesk';
@@ -41,6 +45,7 @@ import Holidays from '../pages/Holidays';
 import AttendanceReport from '../pages/Reports/AttendanceReport';
 import LeaveReport from '../pages/Reports/LeaveReport';
 import RecruitmentReport from '../pages/Reports/RecruitmentReport';
+import PerformanceReports from '../pages/Reports/PerformanceReports';
 import Interviews from '../pages/Interviews';
 import OfferLetters from '../pages/OfferLetters';
 import Onboarding from '../pages/Onboarding';
@@ -179,13 +184,22 @@ export const router = createBrowserRouter([
           // PERFORMANCE: Super Admin, HR Admin, Manager, Employee
           { 
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'Manager', 'Employee']} />,
-            children: [{ path: ROUTES.PERFORMANCE, element: <Performance /> }]
+            children: [
+              { path: ROUTES.PERFORMANCE, element: <Performance /> },
+              { path: ROUTES.GOALS, element: <Goals /> },
+              { path: ROUTES.REVIEWS, element: <Reviews /> },
+              { path: ROUTES.MY_PERFORMANCE, element: <MyPerformance /> },
+              { path: ROUTES.REPORTS_PERFORMANCE, element: <PerformanceReports /> }
+            ]
           },
 
           // TRAINING: Super Admin, HR Admin, HR Executive, Manager, Employee
           { 
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive', 'Manager', 'Employee']} />,
-            children: [{ path: ROUTES.TRAINING, element: <Training /> }]
+            children: [
+              { path: ROUTES.TRAINING, element: <Training /> },
+              { path: ROUTES.MY_TRAINING, element: <MyTraining /> }
+            ]
           },
 
           // ASSETS: Super Admin, HR Admin, HR Executive, Manager, Employee
