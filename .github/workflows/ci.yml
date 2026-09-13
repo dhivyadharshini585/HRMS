@@ -84,3 +84,61 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs:
+      - backend-tests
+      - frontend-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy application to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          set -e
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/hrms_ec2_key
+          chmod 600 ~/.ssh/hrms_ec2_key
+
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+
+          trap 'rm -f ~/.ssh/hrms_ec2_key' EXIT
+
+          ssh -i ~/.ssh/hrms_ec2_key "$EC2_USERNAME@$EC2_HOST" << 'REMOTE_COMMANDS'
+            set -e
+
+            cd ~/HRMS
+
+            echo "Updating repository..."
+            git fetch origin main
+            git pull --ff-only origin main
+
+            echo "Deploying Laravel backend..."
+            cd ~/HRMS/hrm-backend
+            composer install --no-dev --optimize-autoloader
+            mkdir -p storage/framework/cache
+            mkdir -p storage/framework/sessions
+            mkdir -p storage/framework/views
+            php artisan migrate --force
+            php artisan optimize:clear
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+
+            echo "Building React frontend..."
+            cd ~/HRMS/hrm-frontend
+            npm ci
+            npm run build
+
+            echo "Reloading services..."
+            sudo systemctl reload php8.3-fpm
+            sudo systemctl reload nginx
+
+            echo "Deployment completed successfully."
+          REMOTE_COMMANDS
