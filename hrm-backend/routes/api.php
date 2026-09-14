@@ -6,6 +6,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\Api\AssetController;
+use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\SupportTicketController;
+use App\Http\Controllers\Api\TimesheetController;
 
 Route::get('/health', function () {
     return response()->json([
@@ -224,4 +228,29 @@ Route::middleware('auth:sanctum')->group(function () {
             'role' => $request->user()->getRoleNames()->first()
         ]);
     })->middleware('permission:dashboard.view');
+
+    // Projects & Tasks
+    Route::apiResource('projects', ProjectController::class)->middleware('permission:projects.view|projects.manage');
+    Route::get('projects-utilization', [ProjectController::class, 'utilization'])->middleware('permission:projects.view|projects.manage');
+    Route::post('projects/{project}/tasks', [ProjectController::class, 'storeTask'])->middleware('permission:projects.manage');
+    Route::put('projects/{project}/tasks/{task}', [ProjectController::class, 'updateTask'])->middleware('permission:projects.manage');
+    Route::delete('projects/{project}/tasks/{task}', [ProjectController::class, 'destroyTask'])->middleware('permission:projects.manage');
+
+    // Timesheets
+    Route::apiResource('timesheets', TimesheetController::class)->middleware('permission:timesheets.view|timesheets.manage');
+    Route::post('timesheets/weekly', [TimesheetController::class, 'storeWeekly'])->middleware('permission:timesheets.view');
+    Route::post('timesheets/{timesheet}/submit', [TimesheetController::class, 'submit'])->middleware('permission:timesheets.view');
+    Route::post('timesheets/{timesheet}/approve', [TimesheetController::class, 'approve'])->middleware('permission:timesheets.approve');
+    Route::post('timesheets/{timesheet}/reject', [TimesheetController::class, 'reject'])->middleware('permission:timesheets.approve');
+
+    // Assets
+    Route::apiResource('assets', AssetController::class)->middleware('permission:assets.view|assets.manage');
+    Route::get('asset-assignments', [AssetController::class, 'assignments'])->middleware('permission:assets.view|assets.manage');
+    Route::post('assets/{asset}/assign', [AssetController::class, 'assign'])->middleware('permission:assets.manage');
+    Route::post('assets/{asset}/return', [AssetController::class, 'returnAsset'])->middleware('permission:assets.manage');
+
+    // IT Helpdesk
+    Route::apiResource('support-tickets', SupportTicketController::class)->middleware('permission:helpdesk.view|helpdesk.manage');
+    Route::get('support-tickets-status-counts', [SupportTicketController::class, 'statusCounts'])->middleware('permission:helpdesk.view|helpdesk.manage');
+    Route::patch('support-tickets/{supportTicket}/status', [SupportTicketController::class, 'updateStatus'])->middleware('permission:helpdesk.manage');
 });
