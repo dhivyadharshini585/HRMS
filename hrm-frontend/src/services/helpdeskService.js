@@ -12,5 +12,9 @@ export const helpdeskService = {
   updateTicketStatus: async (id, status) => {
     const response = await api.patch(`/support-tickets/${id}/status`, { status });
     return response.data;
+  },
+  getStatusCounts: async () => {
+    const response = await api.get('/support-tickets-status-counts');
+    return response.data;
   }
 };

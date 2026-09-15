@@ -45,4 +45,5 @@ export const ROUTES = {
   PAYROLL_REPORTS: '/reports/payroll',
   REPORTS_PERFORMANCE: '/reports/performance',
   PAYSLIP_VIEW: '/payslips/:id',
+  PROJECTS: '/projects',
 };

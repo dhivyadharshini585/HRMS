@@ -1,19 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchTimesheets } from '../../store/timesheetSlice';
 import { timesheetService } from '../../services/timesheetService';
+import { useAuthContext } from '../../context/AuthContext';
 
 export default function WeeklyTimesheet() {
-  const dispatch = useDispatch();
+  const { user } = useAuthContext();
   const [projects, setProjects] = useState([]);
   const [weekDates, setWeekDates] = useState([]);
   const [entries, setEntries] = useState([]);
 
   useEffect(() => {
-    dispatch(fetchTimesheets());
     fetchProjects();
     generateWeekDates();
-  }, [dispatch]);
+  }, []);
 
   const fetchProjects = async () => {
     try {
@@ -80,8 +78,12 @@ export default function WeeklyTimesheet() {
     }
 
     try {
-      // Typically employee_id would be extracted from token on backend, passing 1 as mock for now if required
-      await timesheetService.createTimesheet({ employee_id: 1, entries: payloadEntries });
+      const employeeId = user?.employee?.id || user?.employee_id;
+      const payload = { entries: payloadEntries };
+      if (employeeId) {
+        payload.employee_id = employeeId;
+      }
+      await timesheetService.createTimesheet(payload);
       alert("Timesheets submitted successfully!");
       generateWeekDates(); // reset
     } catch (err) {

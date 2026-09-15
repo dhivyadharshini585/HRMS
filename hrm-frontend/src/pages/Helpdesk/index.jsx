@@ -1,5 +1,10 @@
-function Helpdesk() {
-  return <h1>Helpdesk</h1>;
-}
+import React from 'react';
+import TicketList from './TicketList';
 
-export default Helpdesk;
+export default function Helpdesk() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      <TicketList />
+    </div>
+  );
+}

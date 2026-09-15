@@ -36,6 +36,7 @@ import MyPerformance from '../pages/MyPerformance';
 import Training from '../pages/Training';
 import MyTraining from '../pages/MyTraining';
 import Assets from '../pages/Assets';
+import Projects from '../pages/Projects';
 import Timesheets from '../pages/Timesheets';
 import Helpdesk from '../pages/Helpdesk';
 import Policies from '../pages/Policies';
@@ -215,6 +216,12 @@ export const router = createBrowserRouter([
           {
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive', 'Manager', 'Employee']} />,
             children: [{ path: ROUTES.ASSETS, element: <Assets /> }]
+          },
+
+          // PROJECTS: Super Admin, HR Admin, Manager
+          {
+            element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'Manager']} />,
+            children: [{ path: ROUTES.PROJECTS, element: <Projects /> }]
           },
 
           // TIMESHEETS: Super Admin, HR Admin, Manager, Employee, Finance/Payroll Admin

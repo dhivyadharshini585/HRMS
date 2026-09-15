@@ -6,7 +6,8 @@ export const timesheetService = {
     return response.data.data || response.data; // Handles paginated or non-paginated
   },
   createTimesheet: async (data) => {
-    const response = await api.post('/timesheets', data);
+    const endpoint = data.entries ? '/timesheets/weekly' : '/timesheets';
+    const response = await api.post(endpoint, data);
     return response.data;
   },
   getProjects: async () => {

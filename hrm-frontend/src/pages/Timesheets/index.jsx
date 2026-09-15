@@ -1,5 +1,12 @@
-function Timesheets() {
-  return <h1>Timesheets</h1>;
-}
+import React from 'react';
+import WeeklyTimesheet from './WeeklyTimesheet';
+import ProjectUtilization from './ProjectUtilization';
 
-export default Timesheets;
+export default function Timesheets() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      <WeeklyTimesheet />
+      <ProjectUtilization />
+    </div>
+  );
+}
