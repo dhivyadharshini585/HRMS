@@ -6,6 +6,7 @@ use App\Models\Payroll;
 use App\Models\Employee;
 use App\Services\PayrollCalculationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Exception;
 
 class PayrollController extends Controller
@@ -74,11 +75,20 @@ class PayrollController extends Controller
             return response()->json(['message' => 'Payroll cannot be approved in its current status.'], 422);
         }
 
-        $payroll->update([
-            'status' => 'Approved',
-            'approved_by' => $user->id,
-            'approved_at' => now(),
-        ]);
+        $payroll = DB::transaction(function () use ($payroll, $user) {
+            $payroll->update([
+                'status' => 'Approved',
+                'approved_by' => $user->id,
+                'approved_at' => now(),
+            ]);
+
+            return $payroll->fresh(['employee.user']);
+        });
+
+        // Dispatch notification after successful commit
+        if ($payroll && $payroll->employee && $payroll->employee->user) {
+            $payroll->employee->user->notify(new \App\Notifications\PayrollProcessedNotification($payroll));
+        }
 
         return response()->json($payroll);
     }

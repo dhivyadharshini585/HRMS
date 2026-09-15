@@ -303,4 +303,133 @@ class AttendanceTest extends TestCase
 
         Carbon::setTestNow(); // reset time
     }
+    /** @test */
+    public function test_15_early_exit_calculated_correctly()
+    {
+        $shift = $this->employee1->currentShift();
+        $dateStr = now()->toDateString();
+        $checkInTime = Carbon::parse($dateStr . ' ' . ($shift ? $shift->start_time : '09:00:00'));
+        $expectedEndTime = Carbon::parse($dateStr . ' ' . ($shift ? $shift->end_time : '18:00:00'));
+
+        // Checkout 1 hour early
+        $checkOutTime = $expectedEndTime->copy()->subHour();
+
+        Carbon::setTestNow($checkInTime);
+        $this->actingAs($this->employeeUser1)->postJson('/api/attendance/check-in');
+
+        Carbon::setTestNow($checkOutTime);
+        $this->actingAs($this->employeeUser1)->postJson('/api/attendance/check-out');
+
+        $attendance = Attendance::where('employee_id', $this->employee1->id)->where('attendance_date', $dateStr)->first();
+
+        $this->assertEquals(60, $attendance->early_exit_minutes);
+        $this->assertEquals(0, $attendance->overtime_minutes);
+
+        Carbon::setTestNow(); // reset
+    }
+
+    /** @test */
+    public function test_16_on_time_checkout_has_zero_early_exit()
+    {
+        $shift = $this->employee1->currentShift();
+        $dateStr = now()->toDateString();
+        $checkInTime = Carbon::parse($dateStr . ' ' . ($shift ? $shift->start_time : '09:00:00'));
+        $expectedEndTime = Carbon::parse($dateStr . ' ' . ($shift ? $shift->end_time : '18:00:00'));
+
+        Carbon::setTestNow($checkInTime);
+        $this->actingAs($this->employeeUser1)->postJson('/api/attendance/check-in');
+
+        Carbon::setTestNow($expectedEndTime);
+        $this->actingAs($this->employeeUser1)->postJson('/api/attendance/check-out');
+
+        $attendance = Attendance::where('employee_id', $this->employee1->id)->where('attendance_date', $dateStr)->first();
+
+        $this->assertEquals(0, $attendance->early_exit_minutes);
+
+        Carbon::setTestNow(); // reset
+    }
+
+    /** @test */
+    public function test_17_night_shift_early_exit()
+    {
+        $this->employee2->update(['shift_id' => $this->nightShift->id]);
+
+        $dateStr = '2026-09-04';
+        $checkInTime = Carbon::parse($dateStr . ' 22:00:00');
+        // Expected end time is next day 07:00:00
+        $checkOutTime = Carbon::parse('2026-09-05 06:30:00'); // 30 minutes early
+
+        Carbon::setTestNow($checkInTime);
+        $this->actingAs($this->employeeUser2)->postJson('/api/attendance/check-in');
+
+        Carbon::setTestNow($checkOutTime);
+        $this->actingAs($this->employeeUser2)->postJson('/api/attendance/check-out');
+
+        $attendance = Attendance::where('employee_id', $this->employee2->id)->where('attendance_date', $dateStr)->first();
+
+        $this->assertEquals(30, $attendance->early_exit_minutes);
+
+        Carbon::setTestNow(); // reset
+    }
+    /** @test */
+    public function test_18_check_in_stores_valid_gps_and_device_metadata()
+    {
+        $payload = [
+            'latitude' => 37.7749,
+            'longitude' => -122.4194,
+            'device' => 'iPhone 15 Pro Max',
+        ];
+
+        $response = $this->actingAs($this->employeeUser1)->postJson('/api/attendance/check-in', $payload);
+        $response->assertStatus(201);
+
+        $attendance = Attendance::where('employee_id', $this->employee1->id)->first();
+        $this->assertEquals(37.7749, $attendance->check_in_latitude);
+        $this->assertEquals(-122.4194, $attendance->check_in_longitude);
+        $this->assertEquals('iPhone 15 Pro Max', $attendance->check_in_device);
+    }
+
+    /** @test */
+    public function test_19_check_out_stores_valid_gps_and_device_metadata()
+    {
+        $this->actingAs($this->employeeUser1)->postJson('/api/attendance/check-in');
+
+        $payload = [
+            'latitude' => 51.5074,
+            'longitude' => -0.1278,
+            'device' => 'Samsung Galaxy S24',
+        ];
+
+        $response = $this->actingAs($this->employeeUser1)->postJson('/api/attendance/check-out', $payload);
+        $response->assertStatus(200);
+
+        $attendance = Attendance::where('employee_id', $this->employee1->id)->first();
+        $this->assertEquals(51.5074, $attendance->check_out_latitude);
+        $this->assertEquals(-0.1278, $attendance->check_out_longitude);
+        $this->assertEquals('Samsung Galaxy S24', $attendance->check_out_device);
+    }
+
+    /** @test */
+    public function test_20_invalid_latitude_is_rejected()
+    {
+        $payload = [
+            'latitude' => 91.0, // Invalid, > 90
+            'longitude' => 0.0,
+        ];
+
+        $response = $this->actingAs($this->employeeUser1)->postJson('/api/attendance/check-in', $payload);
+        $response->assertStatus(422);
+    }
+
+    /** @test */
+    public function test_21_invalid_longitude_is_rejected()
+    {
+        $payload = [
+            'latitude' => 0.0,
+            'longitude' => -181.0, // Invalid, < -180
+        ];
+
+        $response = $this->actingAs($this->employeeUser1)->postJson('/api/attendance/check-in', $payload);
+        $response->assertStatus(422);
+    }
 }

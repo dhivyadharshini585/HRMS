@@ -73,11 +73,31 @@ const Attendance = () => {
     fetchHistory(1);
   }, [fetchTodayState, fetchHistory]);
 
+  const getMetadata = async () => {
+    return new Promise((resolve) => {
+      const metadata = { device: navigator.userAgent };
+      if (!navigator.geolocation) {
+        resolve(metadata);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          metadata.latitude = position.coords.latitude;
+          metadata.longitude = position.coords.longitude;
+          resolve(metadata);
+        },
+        () => resolve(metadata), // Proceed without GPS if denied or error
+        { timeout: 5000 }
+      );
+    });
+  };
+
   const handleCheckIn = async () => {
     setActionLoading(true);
     setMessage({ type: '', text: '' });
     try {
-      const res = await attendanceService.checkIn({ remarks });
+      const metadata = await getMetadata();
+      const res = await attendanceService.checkIn({ remarks, ...metadata });
       setMessage({ type: 'success', text: res.message || 'Checked in successfully.' });
       setTodayData(res.attendance);
       fetchHistory(1);
@@ -93,7 +113,8 @@ const Attendance = () => {
     setActionLoading(true);
     setMessage({ type: '', text: '' });
     try {
-      const res = await attendanceService.checkOut({ remarks });
+      const metadata = await getMetadata();
+      const res = await attendanceService.checkOut({ remarks, ...metadata });
       setMessage({ type: 'success', text: res.message || 'Checked out successfully.' });
       setTodayData(res.attendance);
       fetchHistory(1);

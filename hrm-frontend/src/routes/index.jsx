@@ -28,6 +28,7 @@ import Recruitment from '../pages/Recruitment';
 import Payroll from '../pages/Payroll';
 import PayrollReports from '../pages/Payroll/PayrollReports';
 import PayslipView from '../pages/Payroll/PayslipView';
+import StatutoryRules from '../pages/Payroll/StatutoryRules';
 import Performance from '../pages/Performance';
 import Goals from '../pages/Goals';
 import Reviews from '../pages/Reviews';
@@ -75,7 +76,7 @@ export const router = createBrowserRouter([
           { path: ROUTES.EMPLOYEE_ME, element: <EmployeeView /> },
 
           // EMPLOYEES DIRECTORY & CRUD: Super Admin, HR Admin, HR Executive, Manager, Finance/Payroll Admin
-          { 
+          {
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive', 'Manager', 'Finance/Payroll Admin']} />,
             children: [
               { path: ROUTES.EMPLOYEES, element: <Employees /> },
@@ -86,7 +87,7 @@ export const router = createBrowserRouter([
           },
 
           // DEPARTMENTS: Super Admin, HR Admin, HR Executive
-          { 
+          {
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive']} />,
             children: [
               { path: ROUTES.DEPARTMENTS, element: <Departments /> },
@@ -96,7 +97,7 @@ export const router = createBrowserRouter([
           },
 
           // DESIGNATIONS: Super Admin, HR Admin, HR Executive
-          { 
+          {
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive']} />,
             children: [
               { path: ROUTES.DESIGNATIONS, element: <Designations /> },
@@ -106,25 +107,25 @@ export const router = createBrowserRouter([
           },
 
           // DOCUMENTS: Super Admin, HR Admin, HR Executive, Manager, Employee
-          { 
+          {
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive', 'Manager', 'Employee']} />,
             children: [{ path: ROUTES.DOCUMENTS, element: <Documents /> }]
           },
 
           // AUDIT LOGS: Super Admin, HR Admin, Finance/Payroll Admin
-          { 
+          {
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'Finance/Payroll Admin']} />,
             children: [{ path: ROUTES.AUDIT_LOGS, element: <AuditLogs /> }]
           },
 
           // SHIFTS: Super Admin, HR Admin, HR Executive, Manager (Employee excluded)
-          { 
+          {
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive', 'Manager']} />,
             children: [{ path: ROUTES.SHIFTS, element: <Shifts /> }]
           },
 
           // HOLIDAYS: Super Admin, HR Admin, HR Executive, Manager, Employee
-          { 
+          {
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive', 'Manager', 'Employee']} />,
             children: [{ path: ROUTES.HOLIDAYS, element: <Holidays /> }]
           },
@@ -145,7 +146,7 @@ export const router = createBrowserRouter([
           },
 
           // JOB OPENINGS / CANDIDATES / RECRUITMENT: Super Admin, HR Admin, HR Executive
-          { 
+          {
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive']} />,
             children: [
               { path: ROUTES.JOBS, element: <Jobs /> },
@@ -157,22 +158,30 @@ export const router = createBrowserRouter([
               { path: ROUTES.ONBOARDING_DETAILS, element: <OnboardingDetails /> },
             ]
           },
- 
+
           // INTERVIEWS: Super Admin, HR Admin, HR Executive, Manager
-          { 
+          {
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive', 'Manager']} />,
             children: [{ path: ROUTES.INTERVIEWS, element: <Interviews /> }]
           },
 
           // PAYROLL: Super Admin, Finance/Payroll Admin, HR Admin
-          { 
+          {
             element: <ProtectedRoute roles={['Super Admin', 'Finance/Payroll Admin', 'HR Admin']} />,
             children: [
               { path: ROUTES.PAYROLL, element: <Payroll /> },
               { path: ROUTES.PAYROLL_REPORTS, element: <PayrollReports /> },
             ]
           },
-          
+
+          // STATUTORY RULES: Super Admin, Finance/Payroll Admin
+          {
+            element: <ProtectedRoute roles={['Super Admin', 'Finance/Payroll Admin']} />,
+            children: [
+              { path: ROUTES.PAYROLL_STATUTORY_RULES, element: <StatutoryRules /> },
+            ]
+          },
+
           // PAYSLIP VIEW (Available to Employees too)
           {
             element: <ProtectedRoute />, // Let PayslipView handle ownership logic
@@ -182,7 +191,7 @@ export const router = createBrowserRouter([
           },
 
           // PERFORMANCE: Super Admin, HR Admin, Manager, Employee
-          { 
+          {
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'Manager', 'Employee']} />,
             children: [
               { path: ROUTES.PERFORMANCE, element: <Performance /> },
@@ -194,7 +203,7 @@ export const router = createBrowserRouter([
           },
 
           // TRAINING: Super Admin, HR Admin, HR Executive, Manager, Employee
-          { 
+          {
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive', 'Manager', 'Employee']} />,
             children: [
               { path: ROUTES.TRAINING, element: <Training /> },
@@ -203,13 +212,13 @@ export const router = createBrowserRouter([
           },
 
           // ASSETS: Super Admin, HR Admin, HR Executive, Manager, Employee
-          { 
+          {
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive', 'Manager', 'Employee']} />,
             children: [{ path: ROUTES.ASSETS, element: <Assets /> }]
           },
 
           // TIMESHEETS: Super Admin, HR Admin, Manager, Employee, Finance/Payroll Admin
-          { 
+          {
             element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'Manager', 'Employee', 'Finance/Payroll Admin']} />,
             children: [{ path: ROUTES.TIMESHEETS, element: <Timesheets /> }]
           },

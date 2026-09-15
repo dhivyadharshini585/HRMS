@@ -260,6 +260,72 @@ class PayrollTest extends TestCase
 
         $calculator->calculateDraft($this->employee, 9, 2026);
     }
+    public function test_payroll_calculation_aggregates_attendance_data()
+    {
+        $this->createSalaryStructure($this->employee);
+
+        // Add Attendance records for the month
+        \App\Models\Attendance::create([
+            'employee_id' => $this->employee->id,
+            'attendance_date' => '2026-09-01',
+            'working_minutes' => 480,
+            'overtime_minutes' => 60,
+        ]);
+
+        \App\Models\Attendance::create([
+            'employee_id' => $this->employee->id,
+            'attendance_date' => '2026-09-02',
+            'working_minutes' => 420, // 7 hours
+            'overtime_minutes' => 0,
+        ]);
+
+        // Outside the month, should not be included
+        \App\Models\Attendance::create([
+            'employee_id' => $this->employee->id,
+            'attendance_date' => '2026-08-31',
+            'working_minutes' => 480,
+            'overtime_minutes' => 120,
+        ]);
+
+        // Another employee, should not be included
+        $anotherUser = \App\Models\User::create([
+            'name' => 'Another User',
+            'email' => 'anotheruser@hrms.local',
+            'password' => bcrypt('password'),
+        ]);
+
+        $anotherEmployee = \App\Models\Employee::create([
+            'user_id' => $anotherUser->id,
+            'employee_code' => 'EMP-PAYROLL-002',
+            'first_name' => 'Jane',
+            'last_name' => 'Doe',
+            'department_id' => $this->department->id,
+            'designation_id' => $this->designation->id,
+            'date_of_joining' => '2025-01-01',
+            'status' => 'Active',
+            'email' => 'jane.doe@hrms.local',
+        ]);
+
+        \App\Models\Attendance::create([
+            'employee_id' => $anotherEmployee->id,
+            'attendance_date' => '2026-09-03',
+            'working_minutes' => 480,
+            'overtime_minutes' => 60,
+        ]);
+
+        $calculator = app(PayrollCalculationService::class);
+        $payroll = $calculator->calculateDraft($this->employee, 9, 2026);
+
+        // 480 + 420 = 900 working minutes
+        $this->assertEquals(900, $payroll->total_working_minutes);
+        // 60 + 0 = 60 overtime minutes
+        $this->assertEquals(60, $payroll->total_overtime_minutes);
+
+        // Earnings and deductions must remain unchanged
+        $this->assertEquals(80000.00, $payroll->gross_earnings);
+        $this->assertEquals(8000.00, $payroll->total_deductions);
+        $this->assertEquals(72000.00, $payroll->net_salary);
+    }
 
     // =========================================================================
     // SECTION C: PAYROLL PROCESSING
@@ -337,7 +403,7 @@ class PayrollTest extends TestCase
     public function test_employee_without_payroll_view_cannot_access_payroll_index()
     {
         $this->createSalaryStructure($this->employee);
-        
+
         $calculator = app(PayrollCalculationService::class);
         $calculator->calculateDraft($this->employee, 9, 2026);
 

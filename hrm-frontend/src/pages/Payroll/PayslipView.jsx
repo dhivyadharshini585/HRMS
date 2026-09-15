@@ -53,11 +53,17 @@ export default function PayslipView() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-8)', marginBottom: 'var(--space-8)', borderBottom: '1px solid var(--border-color)', paddingBottom: 'var(--space-4)' }}>
           <div>
             <p style={{ margin: '0 0 var(--space-2) 0' }}><strong style={{ fontWeight: 600 }}>Employee Name:</strong> {employee.first_name} {employee.last_name}</p>
-            <p style={{ margin: 0 }}><strong style={{ fontWeight: 600 }}>Employee ID:</strong> {employee.employee_id}</p>
+            <p style={{ margin: '0 0 var(--space-2) 0' }}><strong style={{ fontWeight: 600 }}>Employee ID:</strong> {employee.employee_id}</p>
+            {payroll.total_working_minutes != null && (
+              <p style={{ margin: 0 }}><strong style={{ fontWeight: 600 }}>Working Hours:</strong> {Math.floor(payroll.total_working_minutes / 60)}h {payroll.total_working_minutes % 60}m</p>
+            )}
           </div>
           <div>
             <p style={{ margin: '0 0 var(--space-2) 0' }}><strong style={{ fontWeight: 600 }}>Department:</strong> {employee.department?.name || 'N/A'}</p>
-            <p style={{ margin: 0 }}><strong style={{ fontWeight: 600 }}>Designation:</strong> {employee.designation?.name || 'N/A'}</p>
+            <p style={{ margin: '0 0 var(--space-2) 0' }}><strong style={{ fontWeight: 600 }}>Designation:</strong> {employee.designation?.name || 'N/A'}</p>
+            {payroll.total_overtime_minutes != null && (
+              <p style={{ margin: 0 }}><strong style={{ fontWeight: 600 }}>Overtime Hours:</strong> {Math.floor(payroll.total_overtime_minutes / 60)}h {payroll.total_overtime_minutes % 60}m</p>
+            )}
           </div>
         </div>
 

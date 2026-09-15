@@ -16,6 +16,8 @@ class Payroll extends Model
         'gross_earnings',
         'total_deductions',
         'net_salary',
+        'total_working_minutes',
+        'total_overtime_minutes',
         'status',
         'approved_by',
         'approved_at',
@@ -23,6 +25,8 @@ class Payroll extends Model
 
     protected $casts = [
         'approved_at' => 'datetime',
+        'total_working_minutes' => 'integer',
+        'total_overtime_minutes' => 'integer',
     ];
 
     public function employee(): BelongsTo
@@ -38,5 +42,10 @@ class Payroll extends Model
     public function payslip(): HasOne
     {
         return $this->hasOne(Payslip::class);
+    }
+
+    public function components()
+    {
+        return $this->hasMany(PayrollComponent::class);
     }
 }

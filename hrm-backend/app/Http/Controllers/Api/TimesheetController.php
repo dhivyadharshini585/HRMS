@@ -10,16 +10,36 @@ use Illuminate\Support\Facades\DB;
 
 class TimesheetController extends Controller
 {
+    private function getEmployeeId(Request $request): ?int
+    {
+        $user = $request->user();
+        return $user->employee?->id ?? $user->employee_id;
+    }
+
     public function index(Request $request)
     {
         $query = Timesheet::with(['employee:id,first_name,last_name', 'project:id,name', 'task:id,name']);
 
         $user = $request->user();
-        // Secure by default: Employees only see their own timesheets unless they have admin permissions.
-        if (!$user->hasRole('Admin') && !$user->hasRole('HR Admin')) {
-            $query->where('employee_id', $user->employee_id);
-        } elseif ($request->filled('employee_id')) {
-            $query->where('employee_id', $request->input('employee_id'));
+        $employeeId = $this->getEmployeeId($request);
+
+        if ($user->hasRole('Super Admin') || $user->hasRole('HR Admin') || $user->hasRole('Finance/Payroll Admin')) {
+            if ($request->filled('employee_id')) {
+                $query->where('employee_id', $request->input('employee_id'));
+            }
+        } elseif ($user->hasRole('Manager')) {
+            $query->where(function ($q) use ($employeeId) {
+                $q->where('employee_id', $employeeId)
+                  ->orWhereHas('employee', function ($eq) use ($employeeId) {
+                      $eq->where('manager_id', $employeeId);
+                  });
+            });
+            if ($request->filled('employee_id')) {
+                $query->where('employee_id', $request->input('employee_id'));
+            }
+        } else {
+            // Employee / HR Executive / others: strictly own timesheets
+            $query->where('employee_id', $employeeId);
         }
 
         if ($request->filled('project_id')) {
@@ -44,7 +64,8 @@ class TimesheetController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request);
-        $data['employee_id'] = $request->user()->employee_id ?? $data['employee_id'];
+        $employeeId = $this->getEmployeeId($request);
+        $data['employee_id'] = $employeeId ?? $data['employee_id'];
         
         if (isset($data['billable_hours']) || isset($data['non_billable_hours'])) {
             $billable = $data['billable_hours'] ?? $data['hours'];
@@ -78,7 +99,7 @@ class TimesheetController extends Controller
             'entries.*.client' => ['nullable', 'string'],
         ]);
 
-        $employeeId = $request->user()->employee_id;
+        $employeeId = $this->getEmployeeId($request);
         
         if (!$employeeId) {
             return response()->json(['message' => 'User is not linked to an employee record.'], 403);
@@ -102,8 +123,6 @@ class TimesheetController extends Controller
             $billable = $entry['billable_hours'] ?? $entry['hours'];
             $nonBillable = $entry['non_billable_hours'] ?? 0;
             
-            // Adjust if they don't match, or we could throw a validation error. 
-            // We'll trust the provided total hours and adjust billable if needed.
             if (abs(($billable + $nonBillable) - $entry['hours']) > 0.01) {
                 $billable = $entry['hours'];
                 $nonBillable = 0;
@@ -126,20 +145,45 @@ class TimesheetController extends Controller
         return response()->json($created, 201);
     }
 
-    public function show(Timesheet $timesheet)
+    public function show(Request $request, Timesheet $timesheet)
     {
+        $user = $request->user();
+        $employeeId = $this->getEmployeeId($request);
+
+        if (!$user->hasRole('Super Admin') && !$user->hasRole('HR Admin') && !$user->hasRole('Finance/Payroll Admin')) {
+            if ($user->hasRole('Manager')) {
+                $isOwn = $timesheet->employee_id == $employeeId;
+                $isDirectReport = $timesheet->employee && $timesheet->employee->manager_id == $employeeId;
+                if (!$isOwn && !$isDirectReport) {
+                    return response()->json(['message' => 'Unauthorized timesheet access.'], 403);
+                }
+            } else {
+                if ($timesheet->employee_id != $employeeId) {
+                    return response()->json(['message' => 'Unauthorized timesheet access.'], 403);
+                }
+            }
+        }
+
         return response()->json($timesheet->load('employee:id,first_name,last_name', 'project:id,name', 'task:id,name'));
     }
 
     public function update(Request $request, Timesheet $timesheet)
     {
+        $user = $request->user();
+        $employeeId = $this->getEmployeeId($request);
+
+        if (!$user->hasRole('Super Admin') && !$user->hasRole('HR Admin')) {
+            if ($timesheet->employee_id != $employeeId) {
+                return response()->json(['message' => 'Unauthorized to modify this timesheet.'], 403);
+            }
+        }
+
         if (in_array($timesheet->status, ['Approved', 'Submitted'])) {
             return response()->json(['message' => 'Cannot modify a timesheet that is already submitted or approved.'], 403);
         }
 
         $data = $this->validated($request, sometimes: true);
         
-        // Remove employee_id from update if present to prevent reassignment
         unset($data['employee_id']);
 
         $timesheet->update($data);
@@ -147,8 +191,17 @@ class TimesheetController extends Controller
         return response()->json($timesheet);
     }
 
-    public function destroy(Timesheet $timesheet)
+    public function destroy(Request $request, Timesheet $timesheet)
     {
+        $user = $request->user();
+        $employeeId = $this->getEmployeeId($request);
+
+        if (!$user->hasRole('Super Admin') && !$user->hasRole('HR Admin')) {
+            if ($timesheet->employee_id != $employeeId) {
+                return response()->json(['message' => 'Unauthorized to delete this timesheet.'], 403);
+            }
+        }
+
         if (in_array($timesheet->status, ['Approved', 'Submitted'])) {
             return response()->json(['message' => 'Cannot delete a timesheet that is already submitted or approved.'], 403);
         }
@@ -158,8 +211,15 @@ class TimesheetController extends Controller
         return response()->json(null, 204);
     }
 
-    public function submit(Timesheet $timesheet)
+    public function submit(Request $request, Timesheet $timesheet)
     {
+        $user = $request->user();
+        $employeeId = $this->getEmployeeId($request);
+
+        if (!$user->hasRole('Super Admin') && !$user->hasRole('HR Admin') && $timesheet->employee_id != $employeeId) {
+            return response()->json(['message' => 'Unauthorized to submit this timesheet.'], 403);
+        }
+
         if ($timesheet->status !== 'Draft' && $timesheet->status !== 'Rejected') {
             return response()->json(['message' => 'Only Draft or Rejected timesheets can be submitted.'], 422);
         }
@@ -168,8 +228,19 @@ class TimesheetController extends Controller
         return response()->json($timesheet);
     }
 
-    public function approve(Timesheet $timesheet)
+    public function approve(Request $request, Timesheet $timesheet)
     {
+        $user = $request->user();
+        $employeeId = $this->getEmployeeId($request);
+
+        if (!$user->hasRole('Super Admin') && !$user->hasRole('HR Admin')) {
+            if ($user->hasRole('Manager')) {
+                if (!$timesheet->employee || $timesheet->employee->manager_id != $employeeId) {
+                    return response()->json(['message' => 'Managers can only approve direct reports timesheets.'], 403);
+                }
+            }
+        }
+
         if ($timesheet->status !== 'Submitted') {
             return response()->json(['message' => 'Only Submitted timesheets can be approved.'], 422);
         }
@@ -180,6 +251,17 @@ class TimesheetController extends Controller
 
     public function reject(Request $request, Timesheet $timesheet)
     {
+        $user = $request->user();
+        $employeeId = $this->getEmployeeId($request);
+
+        if (!$user->hasRole('Super Admin') && !$user->hasRole('HR Admin')) {
+            if ($user->hasRole('Manager')) {
+                if (!$timesheet->employee || $timesheet->employee->manager_id != $employeeId) {
+                    return response()->json(['message' => 'Managers can only reject direct reports timesheets.'], 403);
+                }
+            }
+        }
+
         if ($timesheet->status !== 'Submitted' && $timesheet->status !== 'Approved') {
             return response()->json(['message' => 'Invalid status transition.'], 422);
         }

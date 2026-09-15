@@ -84,7 +84,7 @@ class PayrollReportController extends Controller
         $month = $request->month;
         $year = $request->year;
 
-        $payrolls = Payroll::with('employee')->where('month', $month)->where('year', $year)->get();
+        $payrolls = Payroll::with(['employee', 'components'])->where('month', $month)->where('year', $year)->get();
 
         $report = [
             'PF_total' => 0,
@@ -95,57 +95,39 @@ class PayrollReportController extends Controller
             'LOP_total' => 0,
         ];
 
-        $periodEnd = \Carbon\Carbon::create($year, $month)->endOfMonth();
-
         foreach ($payrolls as $payroll) {
             $employee = $payroll->employee;
             if (!$employee) {
                 continue;
             }
 
-            // Find the active salary structure for the payroll period
-            // (same logic as PayrollCalculationService::calculateDraft)
-            $structure = $employee->salaryStructures()
-                ->where('status', 'Active')
-                ->where('effective_from', '<=', $periodEnd)
-                ->where(function ($query) use ($periodEnd) {
-                    $query->whereNull('effective_to')
-                          ->orWhere('effective_to', '>=', $periodEnd);
-                })
-                ->with('components')
-                ->first();
-
-            $structureDeductionTotal = 0;
-
-            if ($structure) {
-                $deductions = $structure->components->where('type', 'Deduction');
-
-                foreach ($deductions as $comp) {
-                    $name = strtoupper($comp->name);
-                    $amount = (float)$comp->amount;
-                    $structureDeductionTotal += $amount;
-
-                    if (str_contains($name, 'PF') || str_contains($name, 'PROVIDENT')) {
-                        $report['PF_total'] += $amount;
-                    } elseif (str_contains($name, 'ESI')) {
-                        $report['ESI_total'] += $amount;
-                    } elseif (str_contains($name, 'PROFESSIONAL TAX') || str_contains($name, 'PT')) {
-                        $report['Professional_Tax_total'] += $amount;
-                    } elseif (str_contains($name, 'TDS') || str_contains($name, 'TAX')) {
-                        $report['TDS_total'] += $amount;
-                    } elseif (str_contains($name, 'LOSS OF PAY') || str_contains($name, 'LOP')) {
-                        $report['LOP_total'] += $amount;
-                    } else {
-                        $report['other_deductions_total'] += $amount;
-                    }
+            if ($payroll->components->isEmpty()) {
+                // For legacy records without snapshot, fallback to total_deductions as other_deductions
+                if ($payroll->total_deductions > 0) {
+                    $report['other_deductions_total'] += $payroll->total_deductions;
                 }
+                continue;
             }
 
-            // Any remaining difference between stored total_deductions and
-            // structure component total is LOP (calculated at payroll time)
-            $lopAmount = (float)$payroll->total_deductions - $structureDeductionTotal;
-            if ($lopAmount > 0) {
-                $report['LOP_total'] += $lopAmount;
+            $deductions = $payroll->components->where('component_type', 'Deduction');
+
+            foreach ($deductions as $comp) {
+                $name = strtoupper($comp->component_name);
+                $amount = (float)$comp->amount;
+
+                if (str_contains($name, 'PF') || str_contains($name, 'PROVIDENT')) {
+                    $report['PF_total'] += $amount;
+                } elseif (str_contains($name, 'ESI')) {
+                    $report['ESI_total'] += $amount;
+                } elseif (str_contains($name, 'PROFESSIONAL TAX') || str_contains($name, 'PT')) {
+                    $report['Professional_Tax_total'] += $amount;
+                } elseif (str_contains($name, 'TDS') || str_contains($name, 'TAX')) {
+                    $report['TDS_total'] += $amount;
+                } elseif (str_contains($name, 'LOSS OF PAY') || str_contains($name, 'LOP')) {
+                    $report['LOP_total'] += $amount;
+                } else {
+                    $report['other_deductions_total'] += $amount;
+                }
             }
         }
 

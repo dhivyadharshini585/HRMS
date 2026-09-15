@@ -122,6 +122,13 @@ class AttendanceController extends Controller
      */
     public function checkIn(Request $request)
     {
+        $request->validate([
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'device' => 'nullable|string|max:255',
+            'remarks' => 'nullable|string'
+        ]);
+
         $user = $request->user();
         $employee = $user->employee;
 
@@ -170,6 +177,9 @@ class AttendanceController extends Controller
         if ($existing) {
             $existing->update([
                 'check_in' => $now,
+                'check_in_latitude' => $request->latitude,
+                'check_in_longitude' => $request->longitude,
+                'check_in_device' => $request->device,
                 'status' => $status,
                 'remarks' => $request->input('remarks', $existing->remarks),
             ]);
@@ -179,6 +189,9 @@ class AttendanceController extends Controller
                 'employee_id' => $employee->id,
                 'attendance_date' => $attendanceDate,
                 'check_in' => $now,
+                'check_in_latitude' => $request->latitude,
+                'check_in_longitude' => $request->longitude,
+                'check_in_device' => $request->device,
                 'status' => $status,
                 'remarks' => $request->input('remarks'),
             ]);
@@ -197,6 +210,13 @@ class AttendanceController extends Controller
      */
     public function checkOut(Request $request)
     {
+        $request->validate([
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'device' => 'nullable|string|max:255',
+            'remarks' => 'nullable|string'
+        ]);
+
         $user = $request->user();
         $employee = $user->employee;
 
@@ -245,50 +265,27 @@ class AttendanceController extends Controller
 
         $oldValues = $attendance->toArray();
 
-        // Calculate duration & final deterministic status
-        $checkIn = Carbon::parse($attendance->check_in);
-        $workingMinutes = (int) $checkIn->diffInMinutes($now);
+        // Use the shared calculation service
+        $metrics = \App\Services\AttendanceCalculationService::calculateMetrics(
+            $attendance->check_in,
+            $now,
+            $shift,
+            $attendance->attendance_date
+        );
 
-        // Expected check-in time for Late logic recalculation if needed
-        $dateStr = Carbon::parse($attendance->attendance_date)->toDateString();
-        $expectedCheckIn = Carbon::parse($dateStr . ' ' . $shift->start_time);
-        $lateThreshold = $expectedCheckIn->copy()->addMinutes($shift->grace_period_minutes ?? 0);
-
-        // Status calculation rule:
-        // 1. working_minutes < 240 => Half Day
-        // 2. otherwise check_in > lateThreshold => Late
-        // 3. otherwise => Present
-        if ($workingMinutes < 240) {
-            $finalStatus = 'Half Day';
-        } elseif ($checkIn->greaterThan($lateThreshold)) {
-            $finalStatus = 'Late';
-        } else {
-            $finalStatus = 'Present';
-        }
-
-        // Overtime calculation
-        // Ensure overtime logic is safe and only works if overtime is enabled on the shift
-        $overtimeMinutes = 0;
-        if ($shift->overtime_enabled && $shift->overtime_threshold_minutes !== null) {
-            // Expected end time
-            $expectedEndTime = Carbon::parse($dateStr . ' ' . $shift->end_time);
-            if ($isNightShift) {
-                $expectedEndTime->addDay();
-            }
-            
-            // Difference between actual checkout and expected end time
-            if ($now->greaterThan($expectedEndTime)) {
-                $extraMinutes = (int) $expectedEndTime->diffInMinutes($now);
-                if ($extraMinutes >= $shift->overtime_threshold_minutes) {
-                    $overtimeMinutes = $extraMinutes;
-                }
-            }
-        }
+        $workingMinutes = $metrics['working_minutes'];
+        $finalStatus = $metrics['status'];
+        $overtimeMinutes = $metrics['overtime_minutes'];
+        $earlyExitMinutes = $metrics['early_exit_minutes'];
 
         $attendance->update([
             'check_out' => $now,
+            'check_out_latitude' => $request->latitude,
+            'check_out_longitude' => $request->longitude,
+            'check_out_device' => $request->device,
             'working_minutes' => $workingMinutes,
             'overtime_minutes' => $overtimeMinutes,
+            'early_exit_minutes' => $earlyExitMinutes,
             'status' => $finalStatus,
             'remarks' => $request->input('remarks', $attendance->remarks),
         ]);

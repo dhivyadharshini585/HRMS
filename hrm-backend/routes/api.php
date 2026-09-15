@@ -73,6 +73,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/attendance/check-in', [App\Http\Controllers\AttendanceController::class, 'checkIn'])->middleware('permission:attendance.view');
     Route::post('/attendance/check-out', [App\Http\Controllers\AttendanceController::class, 'checkOut'])->middleware('permission:attendance.view');
 
+    // Attendance Correction endpoints
+    Route::get('/attendance-corrections', [App\Http\Controllers\AttendanceCorrectionController::class, 'index'])->middleware('permission:attendance.view');
+    Route::post('/attendance-corrections', [App\Http\Controllers\AttendanceCorrectionController::class, 'store'])->middleware('permission:attendance.view');
+    Route::post('/attendance-corrections/{id}/approve', [App\Http\Controllers\AttendanceCorrectionController::class, 'approve'])->middleware('permission:attendance.manage|attendance.view');
+    Route::post('/attendance-corrections/{id}/reject', [App\Http\Controllers\AttendanceCorrectionController::class, 'reject'])->middleware('permission:attendance.manage|attendance.view');
+
     // Shift Management endpoints
     Route::get('/shifts', [App\Http\Controllers\ShiftController::class, 'index'])->middleware('permission:shifts.view');
     Route::get('/shifts/{shift}', [App\Http\Controllers\ShiftController::class, 'show'])->middleware('permission:shifts.view');
@@ -209,6 +215,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/payrolls', [App\Http\Controllers\PayrollController::class, 'store'])->middleware('permission:payroll.manage');
     Route::get('/payrolls/{payroll}', [App\Http\Controllers\PayrollController::class, 'show'])->middleware('permission:payroll.view');
     Route::post('/payrolls/{payroll}/approve', [App\Http\Controllers\PayrollController::class, 'approve'])->middleware('permission:payroll.approve');
+
+    // Statutory Payroll Rules
+    Route::get('/payroll/statutory-rules', [App\Http\Controllers\StatutoryRuleController::class, 'index']);
+    Route::post('/payroll/statutory-rules', [App\Http\Controllers\StatutoryRuleController::class, 'store']);
+    Route::get('/payroll/statutory-rules/{id}', [App\Http\Controllers\StatutoryRuleController::class, 'show']);
+    Route::put('/payroll/statutory-rules/{id}', [App\Http\Controllers\StatutoryRuleController::class, 'update']);
+    Route::patch('/payroll/statutory-rules/{id}/activate', [App\Http\Controllers\StatutoryRuleController::class, 'activate']);
+    Route::patch('/payroll/statutory-rules/{id}/deactivate', [App\Http\Controllers\StatutoryRuleController::class, 'deactivate']);
 
     // Payslips
     Route::post('/payrolls/{payroll}/payslips', [App\Http\Controllers\PayslipController::class, 'generate'])->middleware('permission:payroll.manage');

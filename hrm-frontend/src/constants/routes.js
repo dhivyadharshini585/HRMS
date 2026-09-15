@@ -24,6 +24,7 @@ export const ROUTES = {
   ONBOARDING_DETAILS: '/onboarding/:id',
   RECRUITMENT: '/recruitment',
   PAYROLL: '/payroll',
+  PAYROLL_STATUTORY_RULES: '/payroll/statutory-rules',
   PERFORMANCE: '/performance',
   GOALS: '/goals',
   REVIEWS: '/reviews',

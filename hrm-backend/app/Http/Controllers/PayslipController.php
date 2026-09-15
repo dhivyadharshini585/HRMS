@@ -7,6 +7,7 @@ use App\Models\Payslip;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -31,18 +32,17 @@ class PayslipController extends Controller
         $payslipNumber = 'PS-' . strtoupper(Str::random(8));
 
         // Load employee, department, designation for PDF
-        $payroll->loadMissing(['employee.department', 'employee.designation']);
+        $payroll->loadMissing(['employee.department', 'employee.designation', 'components']);
         $employee = $payroll->employee;
 
-        // Extract earnings and deductions components from active structure
-        $structure = $employee ? $employee->salaryStructures()
-            ->where('status', 'Active')
-            ->with('components')
-            ->first() : null;
-
-        $components = $structure ? $structure->components : collect();
-        $earnings = $components->where('type', 'Earning')->values()->toArray();
-        $deductions = $components->where('type', 'Deduction')->values()->toArray();
+        // Extract earnings and deductions components from payroll snapshot
+        $components = $payroll->components;
+        $earnings = $components->where('component_type', 'Earning')->map(function($c) {
+            return ['name' => $c->component_name, 'amount' => $c->amount];
+        })->values()->toArray();
+        $deductions = $components->where('component_type', 'Deduction')->map(function($c) {
+            return ['name' => $c->component_name, 'amount' => $c->amount];
+        })->values()->toArray();
 
         if (empty($earnings) && $payroll->gross_earnings > 0) {
             $earnings[] = ['name' => 'Basic Salary', 'amount' => $payroll->basic_salary];
@@ -64,7 +64,7 @@ class PayslipController extends Controller
         $options = new Options();
         $options->set('isHtml5ParserEnabled', true);
         $options->set('isRemoteEnabled', true);
-        $options->set('defaultFont', 'Helvetica');
+        $options->set('defaultFont', 'DejaVu Sans');
 
         $dompdf = new Dompdf($options);
         $html = view('payslips.pdf', [
@@ -85,13 +85,20 @@ class PayslipController extends Controller
         $storageRelativePath = "private/payslips/{$filename}";
         Storage::disk('local')->put($storageRelativePath, $pdfContent);
 
-        // Create Payslip record with stored pdf_path
-        $payslip = Payslip::create([
-            'payroll_id' => $payroll->id,
-            'payslip_number' => $payslipNumber,
-            'generated_at' => now(),
-            'pdf_path' => $storageRelativePath,
-        ]);
+        // Create Payslip record inside transaction
+        $payslip = DB::transaction(function () use ($payroll, $payslipNumber, $storageRelativePath) {
+            return Payslip::create([
+                'payroll_id' => $payroll->id,
+                'payslip_number' => $payslipNumber,
+                'generated_at' => now(),
+                'pdf_path' => $storageRelativePath,
+            ])->fresh(['payroll.employee.user']);
+        });
+
+        // Dispatch notification after successful commit
+        if ($payslip && $payslip->payroll && $payslip->payroll->employee && $payslip->payroll->employee->user) {
+            $payslip->payroll->employee->user->notify(new \App\Notifications\PayslipAvailableNotification($payslip));
+        }
 
         return response()->json($payslip, 201);
     }

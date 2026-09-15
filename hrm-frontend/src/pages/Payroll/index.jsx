@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { getPayrolls, approvePayroll, generatePayslip } from '../../services/payrollService';
 import SalaryStructures from './SalaryStructures';
 import PayrollProcessing from './PayrollProcessing';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
-import { 
-  IconDashboard, IconLayers, IconSettings, IconBarChart, 
+import { AuthContext } from '../../context/AuthContext';
+import {
+  IconDashboard, IconLayers, IconSettings, IconBarChart,
   IconDollar, IconEye, IconCheck, IconFileText
 } from '../../components/common/Icons';
 
@@ -20,12 +21,13 @@ function Payroll() {
   const [error, setError] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
-  
+  const { user } = useContext(AuthContext);
+
   const getTabFromUrl = () => {
     const searchParams = new URLSearchParams(location.search);
     return searchParams.get('tab') || 'dashboard';
   };
-  
+
   const [activeTab, setActiveTab] = useState(getTabFromUrl());
 
   useEffect(() => {
@@ -85,7 +87,7 @@ function Payroll() {
         <div className="alert-banner error" style={{ maxWidth: '400px', margin: '0 auto var(--space-4)' }}>
           {error}
         </div>
-        <button 
+        <button
           onClick={() => { setLoading(true); setError(null); fetchPayrolls(); }}
           className="btn-primary"
         >
@@ -98,8 +100,8 @@ function Payroll() {
   const renderTabButton = (id, label, icon) => {
     const isActive = activeTab === id;
     return (
-      <button 
-        onClick={() => handleTabChange(id)} 
+      <button
+        onClick={() => handleTabChange(id)}
         className={`tab-btn ${isActive ? 'active' : ''}`}
         style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}
       >
@@ -111,7 +113,7 @@ function Payroll() {
 
   return (
     <div style={{ padding: 'var(--space-6)' }}>
-      
+
       {/* 1. PAGE HEADER */}
       <div className="page-header" style={{ marginBottom: 'var(--space-6)' }}>
         <div>
@@ -119,14 +121,14 @@ function Payroll() {
           <p className="page-subtitle">Manage employee payroll, process payments and view payroll reports.</p>
         </div>
       </div>
-      
+
       {/* 2. PAYROLL TAB NAVIGATION */}
       <div className="tab-navigation" style={{ overflowX: 'auto', whiteSpace: 'nowrap' }}>
         {renderTabButton('dashboard', 'Dashboard', <IconDashboard width="18" height="18" />)}
         {renderTabButton('structures', 'Salary Structures', <IconLayers width="18" height="18" />)}
         {renderTabButton('processing', 'Process Payroll', <IconSettings width="18" height="18" />)}
-        
-        <Link 
+
+        <Link
           to={ROUTES.PAYROLL_REPORTS}
           className="tab-btn"
           style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', textDecoration: 'none' }}
@@ -134,6 +136,16 @@ function Payroll() {
           <IconBarChart width="18" height="18" />
           Payroll Reports
         </Link>
+        {user?.roles?.some(r => ['Super Admin', 'Finance / Payroll Admin', 'Finance/Payroll Admin'].includes(r)) && (
+          <Link
+            to={ROUTES.PAYROLL_STATUTORY_RULES}
+            className="tab-btn"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', textDecoration: 'none' }}
+          >
+            <IconSettings width="18" height="18" />
+            Statutory Rules
+          </Link>
+        )}
       </div>
 
       {/* Tab Contents */}
@@ -142,20 +154,20 @@ function Payroll() {
 
       {activeTab === 'dashboard' && (
         <div className="detail-card">
-          
+
           {/* 3. RECENT PAYROLLS CARD HEADER */}
           <div className="detail-card-header">
             <h2 style={{ fontSize: '1.125rem', fontWeight: '600', color: 'var(--text-primary)' }}>
               Recent Payrolls
             </h2>
-            <button 
+            <button
               onClick={() => handleTabChange('processing')}
               className="btn-primary"
             >
               + Process Payroll
             </button>
           </div>
-          
+
           {/* 7. TABLE DESIGN */}
           <div className="table-container">
             {payrolls.length === 0 ? (
@@ -164,7 +176,7 @@ function Payroll() {
                 <IconDollar width="48" height="48" style={{ color: 'var(--text-muted)', marginBottom: 'var(--space-4)' }} />
                 <h3>No payroll records found</h3>
                 <p style={{ marginBottom: 'var(--space-4)' }}>Process payroll for an employee to see their salary records here.</p>
-                <button 
+                <button
                   onClick={() => handleTabChange('processing')}
                   className="btn-primary"
                 >
@@ -207,19 +219,19 @@ function Payroll() {
                           </div>
                         </div>
                       </td>
-                      
+
                       <td style={{ fontWeight: '500' }}>
                         {payroll.month}/{payroll.year}
                       </td>
-                      
+
                       <td style={{ textAlign: 'right' }}>
                         ₹{parseFloat(payroll.gross_earnings).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
-                      
+
                       <td style={{ textAlign: 'right', fontWeight: '600', color: 'var(--text-primary)' }}>
                         ₹{parseFloat(payroll.net_salary).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
-                      
+
                       <td style={{ textAlign: 'center' }}>
                         {/* 5. STATUS BADGE */}
                         <span className={`badge ${payroll.status === 'Approved' ? 'badge-success' : 'badge-warning'}`}>
@@ -227,32 +239,32 @@ function Payroll() {
                           {payroll.status}
                         </span>
                       </td>
-                      
+
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)' }}>
                           {payroll.status !== 'Approved' && (
-                            <button 
-                              onClick={() => handleApprove(payroll.id)} 
+                            <button
+                              onClick={() => handleApprove(payroll.id)}
                               className="btn-secondary"
                             >
                               Approve
                             </button>
                           )}
-                          
+
                           {payroll.status === 'Approved' && !payroll.payslip && (
-                            <button 
-                              onClick={() => handleGeneratePayslip(payroll.id)} 
+                            <button
+                              onClick={() => handleGeneratePayslip(payroll.id)}
                               className="btn-secondary"
                               style={{ color: 'var(--primary-color)', borderColor: 'var(--primary-color)' }}
                             >
                               Generate Payslip
                             </button>
                           )}
-                          
+
                           {/* 6. VIEW PAYSLIP ACTION */}
                           {payroll.payslip && (
-                            <Link 
-                              to={ROUTES.PAYSLIP_VIEW.replace(':id', typeof payroll.payslip === 'object' ? payroll.payslip.id : payroll.payslip)} 
+                            <Link
+                              to={ROUTES.PAYSLIP_VIEW.replace(':id', typeof payroll.payslip === 'object' ? payroll.payslip.id : payroll.payslip)}
                               className="btn-secondary"
                             >
                               <IconEye width="16" height="16" />
@@ -267,7 +279,7 @@ function Payroll() {
               </table>
             )}
           </div>
-          
+
           {/* 11. PAGINATION / FOOTER */}
           {payrolls.length > 0 && (
             <div className="pagination-bar">

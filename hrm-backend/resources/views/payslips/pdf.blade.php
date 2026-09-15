@@ -6,11 +6,11 @@
     <style>
         @page {
             margin: 35px 40px;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: 'DejaVu Sans', sans-serif;
             color: #1e293b;
         }
         body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: 'DejaVu Sans', sans-serif;
             font-size: 12px;
             line-height: 1.5;
             color: #334155;
@@ -148,6 +148,22 @@
             <td class="meta-label">Pay Period:</td>
             <td class="meta-value">{{ $payroll->month }}/{{ $payroll->year }}</td>
         </tr>
+        @if(isset($payroll->total_working_minutes) || isset($payroll->total_overtime_minutes))
+        <tr>
+            @if(isset($payroll->total_working_minutes))
+            <td class="meta-label">Working Hours:</td>
+            <td class="meta-value">{{ floor($payroll->total_working_minutes / 60) }}h {{ $payroll->total_working_minutes % 60 }}m</td>
+            @else
+            <td class="meta-label"></td><td class="meta-value"></td>
+            @endif
+            @if(isset($payroll->total_overtime_minutes))
+            <td class="meta-label">Overtime Hours:</td>
+            <td class="meta-value">{{ floor($payroll->total_overtime_minutes / 60) }}h {{ $payroll->total_overtime_minutes % 60 }}m</td>
+            @else
+            <td class="meta-label"></td><td class="meta-value"></td>
+            @endif
+        </tr>
+        @endif
         <tr>
             <td class="meta-label">Generation Date:</td>
             <td class="meta-value">{{ $payslip->generated_at ? \Carbon\Carbon::parse($payslip->generated_at)->format('d M Y') : date('d M Y') }}</td>

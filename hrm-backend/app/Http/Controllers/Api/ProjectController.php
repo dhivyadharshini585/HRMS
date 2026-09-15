@@ -11,9 +11,34 @@ use Illuminate\Validation\Rule;
 
 class ProjectController extends Controller
 {
+    private function checkProjectAccess(Project $project, Request $request): ?\Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+        $employeeId = $user->employee?->id ?? $user->employee_id;
+
+        if (!$user->hasRole('Super Admin') && !$user->hasRole('HR Admin')) {
+            if ($user->hasRole('Manager') && $project->manager_id !== $employeeId) {
+                return response()->json(['message' => 'Unauthorized project access.'], 403);
+            }
+        }
+
+        return null;
+    }
+
     public function index(Request $request)
     {
+        $user = $request->user();
+        $employeeId = $user->employee?->id ?? $user->employee_id;
+
         $query = Project::with('manager:id,first_name,last_name');
+
+        if (!$user->hasRole('Super Admin') && !$user->hasRole('HR Admin')) {
+            if ($user->hasRole('Manager')) {
+                $query->where('manager_id', $employeeId);
+            } else {
+                $query->where('manager_id', $employeeId);
+            }
+        }
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
@@ -29,6 +54,9 @@ class ProjectController extends Controller
 
     public function store(Request $request)
     {
+        $user = $request->user();
+        $employeeId = $user->employee?->id ?? $user->employee_id;
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'client' => ['nullable', 'string', 'max:255'],
@@ -39,6 +67,10 @@ class ProjectController extends Controller
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
         ]);
 
+        if (!$user->hasRole('Super Admin') && !$user->hasRole('HR Admin') && $user->hasRole('Manager')) {
+            $data['manager_id'] = $employeeId;
+        }
+
         if (empty($data['start_date']) && !empty($data['end_date'])) {
             return response()->json(['message' => 'start_date is required when end_date is provided.'], 422);
         }
@@ -48,13 +80,21 @@ class ProjectController extends Controller
         return response()->json($project, 201);
     }
 
-    public function show(Project $project)
+    public function show(Request $request, Project $project)
     {
+        if ($forbidden = $this->checkProjectAccess($project, $request)) {
+            return $forbidden;
+        }
+
         return response()->json($project->load('manager:id,first_name,last_name', 'tasks'));
     }
 
     public function update(Request $request, Project $project)
     {
+        if ($forbidden = $this->checkProjectAccess($project, $request)) {
+            return $forbidden;
+        }
+
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
             'client' => ['nullable', 'string', 'max:255'],
@@ -74,8 +114,12 @@ class ProjectController extends Controller
         return response()->json($project);
     }
 
-    public function destroy(Project $project)
+    public function destroy(Request $request, Project $project)
     {
+        if ($forbidden = $this->checkProjectAccess($project, $request)) {
+            return $forbidden;
+        }
+
         $project->delete();
 
         return response()->json(null, 204);
@@ -85,6 +129,10 @@ class ProjectController extends Controller
 
     public function storeTask(Request $request, Project $project)
     {
+        if ($forbidden = $this->checkProjectAccess($project, $request)) {
+            return $forbidden;
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
@@ -98,6 +146,10 @@ class ProjectController extends Controller
 
     public function updateTask(Request $request, Project $project, Task $task)
     {
+        if ($forbidden = $this->checkProjectAccess($project, $request)) {
+            return $forbidden;
+        }
+
         if ($task->project_id !== $project->id) {
             return response()->json(['message' => 'Task does not belong to this project.'], 404);
         }
@@ -113,8 +165,12 @@ class ProjectController extends Controller
         return response()->json($task);
     }
 
-    public function destroyTask(Project $project, Task $task)
+    public function destroyTask(Request $request, Project $project, Task $task)
     {
+        if ($forbidden = $this->checkProjectAccess($project, $request)) {
+            return $forbidden;
+        }
+
         if ($task->project_id !== $project->id) {
             return response()->json(['message' => 'Task does not belong to this project.'], 404);
         }
@@ -130,6 +186,9 @@ class ProjectController extends Controller
      */
     public function utilization(Request $request)
     {
+        $user = $request->user();
+        $employeeId = $user->employee?->id ?? $user->employee_id;
+
         $query = DB::table('timesheets')
             ->join('projects', 'projects.id', '=', 'timesheets.project_id')
             ->select(
@@ -140,6 +199,12 @@ class ProjectController extends Controller
                 DB::raw('SUM(timesheets.non_billable_hours) as non_billable_hours')
             )
             ->groupBy('projects.id', 'projects.name');
+
+        if (!$user->hasRole('Super Admin') && !$user->hasRole('HR Admin')) {
+            if ($user->hasRole('Manager')) {
+                $query->where('projects.manager_id', $employeeId);
+            }
+        }
 
         if ($request->filled('from')) {
             $query->where('timesheets.date', '>=', $request->input('from'));

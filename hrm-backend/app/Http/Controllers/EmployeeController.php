@@ -19,6 +19,21 @@ class EmployeeController extends Controller
     {
         $query = Employee::with(['department', 'designation']);
 
+        // Scope Manager access to their own team
+        $user = $request->user();
+        if ($user && $user->hasRole('Manager') && !$user->hasAnyRole(['Super Admin', 'HR Admin', 'HR Executive', 'Finance/Payroll Admin'])) {
+            $managerEmp = $user->employee;
+            if ($managerEmp) {
+                $teamEmployeeIds = Employee::where('manager_id', $managerEmp->id)
+                    ->pluck('id')
+                    ->push($managerEmp->id);
+                $query->whereIn('id', $teamEmployeeIds);
+            } else {
+                // If Manager role but no employee record, can't see anyone
+                $query->where('id', -1);
+            }
+        }
+
         // Search by name, email, or code
         if ($request->filled('search')) {
             $searchTerm = $request->search;
@@ -56,7 +71,7 @@ class EmployeeController extends Controller
     public function store(StoreEmployeeRequest $request)
     {
         $validated = $request->validated();
-        
+
         // Auto-generate employee code
         $validated['employee_code'] = Employee::generateEmployeeCode();
 
@@ -117,8 +132,18 @@ class EmployeeController extends Controller
         ])->findOrFail($id);
 
         // RBAC: Must have 'employees.view' OR be viewing their own employee record
-        if (!$user->hasPermissionTo('employees.view') && $user->employee?->id !== $employee->id) {
+        $isSelf = $user->employee?->id === $employee->id;
+
+        if (!$user->hasPermissionTo('employees.view') && !$isSelf) {
             return response()->json(['message' => 'Unauthorized to view this employee profile.'], 403);
+        }
+
+        // Additional scoping for Managers: can only view themselves or direct reports
+        if ($user->hasRole('Manager') && !$user->hasAnyRole(['Super Admin', 'HR Admin', 'HR Executive', 'Finance/Payroll Admin'])) {
+            $isDirectReport = $user->employee?->id === $employee->manager_id;
+            if (!$isSelf && !$isDirectReport) {
+                return response()->json(['message' => 'Unauthorized to view this employee profile.'], 403);
+            }
         }
 
         $data = $employee->toArray();
@@ -133,7 +158,7 @@ class EmployeeController extends Controller
     public function update(UpdateEmployeeRequest $request, string $id)
     {
         $employee = Employee::findOrFail($id);
-        
+
         $employee->update($request->validated());
 
         return response()->json([
@@ -148,7 +173,7 @@ class EmployeeController extends Controller
     public function destroy(string $id)
     {
         $employee = Employee::findOrFail($id);
-        
+
         // Update status to terminated before soft deleting
         $employee->update(['employment_status' => 'Terminated']);
         $employee->delete();
