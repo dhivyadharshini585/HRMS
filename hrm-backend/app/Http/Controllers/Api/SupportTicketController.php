@@ -55,12 +55,14 @@ class SupportTicketController extends Controller
             'priority' => ['nullable', Rule::in(['Low', 'Medium', 'High', 'Critical'])],
         ]);
 
-        if (!$request->user()->employee_id) {
+        $employee = $request->user()->employee;
+
+        if (!$employee) {
             return response()->json(['message' => 'User must be linked to an employee.'], 403);
         }
 
         $ticket = SupportTicket::create($data + [
-            'employee_id' => $request->user()->employee_id,
+            'employee_id' => $employee->id,
             'ticket_number' => SupportTicket::generateTicketNumber(),
             'status' => 'Open',
         ]);
