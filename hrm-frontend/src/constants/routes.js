@@ -27,6 +27,7 @@ export const ROUTES = {
   PAYROLL_STATUTORY_RULES: '/payroll/statutory-rules',
   PERFORMANCE: '/performance',
   GOALS: '/goals',
+  KPIS: '/kpis',
   REVIEWS: '/reviews',
   MY_PERFORMANCE: '/my-performance',
   TRAINING: '/training',

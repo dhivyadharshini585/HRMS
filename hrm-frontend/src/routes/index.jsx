@@ -31,6 +31,7 @@ import PayslipView from '../pages/Payroll/PayslipView';
 import StatutoryRules from '../pages/Payroll/StatutoryRules';
 import Performance from '../pages/Performance';
 import Goals from '../pages/Goals';
+import KPIs from '../pages/KPIs';
 import Reviews from '../pages/Reviews';
 import MyPerformance from '../pages/MyPerformance';
 import Training from '../pages/Training';
@@ -197,6 +198,7 @@ export const router = createBrowserRouter([
             children: [
               { path: ROUTES.PERFORMANCE, element: <Performance /> },
               { path: ROUTES.GOALS, element: <Goals /> },
+              { path: ROUTES.KPIS, element: <KPIs /> },
               { path: ROUTES.REVIEWS, element: <Reviews /> },
               { path: ROUTES.MY_PERFORMANCE, element: <MyPerformance /> },
               { path: ROUTES.REPORTS_PERFORMANCE, element: <PerformanceReports /> }
