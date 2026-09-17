@@ -284,4 +284,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('support-tickets', SupportTicketController::class)->middleware('permission:helpdesk.view|helpdesk.manage');
     Route::get('support-tickets-status-counts', [SupportTicketController::class, 'statusCounts'])->middleware('permission:helpdesk.view|helpdesk.manage');
     Route::patch('support-tickets/{supportTicket}/status', [SupportTicketController::class, 'updateStatus'])->middleware('permission:helpdesk.manage');
+
+    // AI Features (Phase 7)
+    Route::post('/ai/resume-screen', [App\Http\Controllers\AIController::class, 'screenResume'])->middleware('permission:recruitment.manage');
+    Route::post('/ai/hr-assistant', [App\Http\Controllers\AIController::class, 'hrAssistant'])->middleware('permission:recruitment.manage|employees.view');
 });

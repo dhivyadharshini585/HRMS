@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import candidateService from '../../services/candidateService';
 import jobOpeningService from '../../services/jobOpeningService';
+import { aiService } from '../../services/aiService';
 import { useAuthContext } from '../../context/AuthContext';
 
 const STATUS_LIST = ['New', 'Screening', 'Shortlisted', 'Rejected', 'Hired'];
@@ -1444,6 +1445,36 @@ const Candidates = () => {
               </div>
             )}
 
+            {viewingCandidate.ai_match_score !== null && viewingCandidate.ai_match_score !== undefined && (
+              <div style={{ marginBottom: '1rem', padding: '1rem', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '8px' }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', fontWeight: 600, color: '#4c1d95', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span>✨</span> AI Analysis
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.8rem', color: '#6d28d9' }}>Match Score</span>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#5b21b6' }}>
+                      {viewingCandidate.ai_match_score}%
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.8rem', color: '#6d28d9' }}>Extracted Skills</span>
+                    <div style={{ fontWeight: 500, color: '#4c1d95', fontSize: '0.9rem' }}>
+                      {viewingCandidate.ai_extracted_skills || 'None detected'}
+                    </div>
+                  </div>
+                </div>
+                {viewingCandidate.ai_extracted_experience && (
+                  <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #ddd6fe' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#6d28d9' }}>Experience Summary</span>
+                    <p style={{ margin: 0, marginTop: '0.25rem', color: '#4c1d95', fontSize: '0.85rem', lineHeight: 1.4 }}>
+                      {viewingCandidate.ai_extracted_experience}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {viewingCandidate.notes && (
               <div style={{ marginBottom: '1rem' }}>
                 <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', fontWeight: 600 }}>Screening Notes</h4>
@@ -1678,7 +1709,25 @@ const Candidates = () => {
                       {resumeCandidate.resume.uploaded_at && ` | Uploaded: ${new Date(resumeCandidate.resume.uploaded_at).toLocaleDateString()}`}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={async () => {
+                        try {
+                          // Note: A real app would have a loading state for this specific button
+                          const res = await aiService.screenResume(resumeCandidate.id);
+                          alert(`Resume Screened!\nMatch Score: ${res.data.match_score}\nSkills: ${res.data.extracted_skills}`);
+                          fetchCandidates(); // Refresh list to get new AI data
+                          setIsResumeModalOpen(false); // Close modal on success
+                        } catch (e) {
+                          alert(e.response?.data?.error || 'Failed to screen resume via AI');
+                        }
+                      }}
+                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', backgroundColor: '#8b5cf6', borderColor: '#7c3aed', color: 'white' }}
+                    >
+                      ✨ AI Screen
+                    </button>
                     <button
                       type="button"
                       id="btn-resume-modal-download"
