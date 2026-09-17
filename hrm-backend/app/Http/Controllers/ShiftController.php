@@ -118,6 +118,16 @@ class ShiftController extends Controller
             return response()->json(['message' => 'Unauthorized action.'], 403);
         }
 
+        // Prevent deleting shift if it's assigned to any employee
+        if (\App\Models\Employee::where('shift_id', $shift->id)->exists()) {
+            return response()->json(['message' => 'Cannot delete shift. It is assigned to one or more employees.'], 422);
+        }
+
+        // Prevent deleting shift if it is used in any shift rotations
+        if (\App\Models\EmployeeShiftRotation::where('shift_id', $shift->id)->exists()) {
+            return response()->json(['message' => 'Cannot delete shift. It is used in one or more shift rotations.'], 422);
+        }
+
         $oldValues = $shift->toArray();
         $shift->delete();
 

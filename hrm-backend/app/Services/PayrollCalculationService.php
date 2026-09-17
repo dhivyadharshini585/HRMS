@@ -22,14 +22,14 @@ class PayrollCalculationService
      */
     public function calculateDraft(Employee $employee, int $month, int $year): Payroll
     {
-        // 1. Check if payroll already exists for this month to prevent duplicates
+        // 0. Prevent duplicate payroll generation
         $existingPayroll = Payroll::where('employee_id', $employee->id)
             ->where('month', $month)
             ->where('year', $year)
             ->first();
 
         if ($existingPayroll) {
-            throw new Exception("Payroll already exists for this employee for {$month}/{$year}");
+            throw new Exception("A payroll record already exists for this employee for {$month}/{$year}.");
         }
 
         // 2. Find active salary structure for the period

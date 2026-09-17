@@ -148,25 +148,20 @@ class AttendanceController extends Controller
             }
         }
 
-        // Check if attendance record exists for the logical date
-        $existing = Attendance::where('employee_id', $employee->id)
-            ->where('attendance_date', $attendanceDate)
-            ->first();
+        $lockKey = 'attendance_checkin_' . $employee->id . '_' . $attendanceDate;
+        $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 10);
 
-        if ($existing && $existing->check_in !== null) {
-            return response()->json(['message' => 'Already checked in for today.'], 422);
+        if (!$lock->get()) {
+            return response()->json(['message' => 'Check-in already in progress. Please wait.'], 429);
         }
 
-        // Determine status upon check-in based on shift rules
-        // Create a Carbon instance for the expected check-in time on the attendanceDate
-        $dateStr = Carbon::parse($attendanceDate)->toDateString();
-        $expectedCheckIn = Carbon::parse($dateStr . ' ' . $shift->start_time);
-        
-        // Add grace period
-        $lateThreshold = $expectedCheckIn->copy()->addMinutes($shift->grace_period_minutes ?? 0);
-        
-        $status = ($now->greaterThan($lateThreshold)) ? 'Late' : 'Present';
+        try {
+            // Check if attendance record exists for the logical date
+            $existing = Attendance::where('employee_id', $employee->id)
+                ->where('attendance_date', $attendanceDate)
+                ->first();
 
+<<<<<<< Updated upstream
         if ($existing) {
             $existing->update([
                 'check_in' => $now,
@@ -182,14 +177,53 @@ class AttendanceController extends Controller
                 'status' => $status,
                 'remarks' => $request->input('remarks'),
             ]);
+=======
+            if ($existing && $existing->check_in !== null) {
+                return response()->json(['message' => 'Already checked in for today.'], 422);
+            }
+
+            // Determine status upon check-in based on shift rules
+            $dateStr = Carbon::parse($attendanceDate)->toDateString();
+            $expectedCheckIn = Carbon::parse($dateStr . ' ' . $shift->start_time);
+            
+            // Add grace period
+            $lateThreshold = $expectedCheckIn->copy()->addMinutes($shift->grace_period_minutes ?? 0);
+            
+            $status = ($now->greaterThan($lateThreshold)) ? 'Late' : 'Present';
+
+            if ($existing) {
+                $existing->update([
+                    'check_in' => $now,
+                    'check_in_latitude' => $request->latitude,
+                    'check_in_longitude' => $request->longitude,
+                    'check_in_device' => $request->device,
+                    'status' => $status,
+                    'remarks' => $request->input('remarks', $existing->remarks),
+                ]);
+                $attendance = $existing;
+            } else {
+                $attendance = Attendance::create([
+                    'employee_id' => $employee->id,
+                    'attendance_date' => $attendanceDate,
+                    'check_in' => $now,
+                    'check_in_latitude' => $request->latitude,
+                    'check_in_longitude' => $request->longitude,
+                    'check_in_device' => $request->device,
+                    'status' => $status,
+                    'remarks' => $request->input('remarks'),
+                ]);
+            }
+
+            AuditService::logModelChange('attendance.check_in', $attendance, [], $attendance->toArray(), "Checked in at {$now->toTimeString()}");
+
+            return response()->json([
+                'message' => 'Checked in successfully.',
+                'attendance' => $attendance->fresh(),
+            ], 201);
+        } finally {
+            $lock->release();
+>>>>>>> Stashed changes
         }
-
-        AuditService::logModelChange('attendance.check_in', $attendance, [], $attendance->toArray(), "Checked in at {$now->toTimeString()}");
-
-        return response()->json([
-            'message' => 'Checked in successfully.',
-            'attendance' => $attendance->fresh(),
-        ], 201);
     }
 
     /**
@@ -221,23 +255,79 @@ class AttendanceController extends Controller
             }
         }
 
-        $attendance = Attendance::where('employee_id', $employee->id)
-            ->where('attendance_date', $attendanceDate)
-            ->first();
+        $lockKey = 'attendance_checkout_' . $employee->id . '_' . $attendanceDate;
+        $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 10);
 
-        if (!$attendance || $attendance->check_in === null) {
-            // Maybe they checked in before midnight, and are checking out after 07:00 AM?
-            // Fallback to checking the most recent incomplete attendance
-            $attendance = Attendance::where('employee_id', $employee->id)
-                ->whereNull('check_out')
-                ->whereNotNull('check_in')
-                ->orderByDesc('attendance_date')
-                ->first();
-                
-            if (!$attendance) {
-                return response()->json(['message' => 'Cannot check out before checking in.'], 422);
-            }
+        if (!$lock->get()) {
+            return response()->json(['message' => 'Check-out already in progress. Please wait.'], 429);
         }
+
+        try {
+            $attendance = Attendance::where('employee_id', $employee->id)
+                ->where('attendance_date', $attendanceDate)
+                ->first();
+
+            if (!$attendance || $attendance->check_in === null) {
+                // Maybe they checked in before midnight, and are checking out after 07:00 AM?
+                // Fallback to checking the most recent incomplete attendance
+                $attendance = Attendance::where('employee_id', $employee->id)
+                    ->whereNull('check_out')
+                    ->whereNotNull('check_in')
+                    ->orderByDesc('attendance_date')
+                    ->first();
+                    
+                if (!$attendance) {
+                    return response()->json(['message' => 'Cannot check out before checking in.'], 422);
+                }
+            }
+
+            if ($attendance->check_out !== null) {
+                return response()->json(['message' => 'Already checked out for today.'], 422);
+            }
+
+            $oldValues = $attendance->toArray();
+
+            // Use the shared calculation service
+            $metrics = \App\Services\AttendanceCalculationService::calculateMetrics(
+                $attendance->check_in,
+                $now,
+                $shift,
+                $attendance->attendance_date
+            );
+
+            $workingMinutes = $metrics['working_minutes'];
+            $finalStatus = $metrics['status'];
+            $overtimeMinutes = $metrics['overtime_minutes'];
+            $earlyExitMinutes = $metrics['early_exit_minutes'];
+
+            $attendance->update([
+                'check_out' => $now,
+                'check_out_latitude' => $request->latitude,
+                'check_out_longitude' => $request->longitude,
+                'check_out_device' => $request->device,
+                'working_minutes' => $workingMinutes,
+                'overtime_minutes' => $overtimeMinutes,
+                'early_exit_minutes' => $earlyExitMinutes,
+                'status' => $finalStatus,
+                'remarks' => $request->input('remarks', $attendance->remarks),
+            ]);
+            
+            if ($overtimeMinutes > 0) {
+                 $attendance->update(['remarks' => trim($attendance->remarks . ' (Overtime: ' . $overtimeMinutes . ' mins)')]);
+            }
+
+            $fresh = $attendance->fresh();
+
+            AuditService::logModelChange('attendance.check_out', $fresh, $oldValues, $fresh->toArray(), "Checked out at {$now->toTimeString()}");
+
+            return response()->json([
+                'message' => 'Checked out successfully.',
+                'attendance' => $fresh,
+            ], 200);
+        } finally {
+            $lock->release();
+        }
+<<<<<<< Updated upstream
 
         if ($attendance->check_out !== null) {
             return response()->json(['message' => 'Already checked out for today.'], 422);
@@ -305,5 +395,7 @@ class AttendanceController extends Controller
             'message' => 'Checked out successfully.',
             'attendance' => $fresh,
         ], 200);
+=======
+>>>>>>> Stashed changes
     }
 }

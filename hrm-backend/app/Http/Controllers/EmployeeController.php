@@ -151,6 +151,12 @@ class EmployeeController extends Controller
         
         // Update status to terminated before soft deleting
         $employee->update(['employment_status' => 'Terminated']);
+        
+        // Revoke associated user's API tokens so they are instantly logged out
+        if ($employee->user) {
+            $employee->user->tokens()->delete();
+        }
+
         $employee->delete();
 
         return response()->json([
