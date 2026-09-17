@@ -16,11 +16,18 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::with('employee')->where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['These credentials do not match our records.'],
+            ]);
+        }
+
+        // Prevent terminated employees from logging in
+        if ($user->employee && $user->employee->employment_status === 'Terminated') {
+            throw ValidationException::withMessages([
+                'email' => ['Your account has been deactivated.'],
             ]);
         }
 

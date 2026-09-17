@@ -134,7 +134,15 @@ class EmployeeController extends Controller
     {
         $employee = Employee::findOrFail($id);
         
+        $oldStatus = $employee->employment_status;
+        
         $employee->update($request->validated());
+        
+        if ($oldStatus !== 'Terminated' && $employee->employment_status === 'Terminated') {
+            if ($employee->user) {
+                $employee->user->tokens()->delete();
+            }
+        }
 
         return response()->json([
             'message' => 'Employee updated successfully',

@@ -6,7 +6,7 @@ export const createSalaryStructure = (data) => api.post('/salary-structures', da
 export const updateSalaryStructure = (id, data) => api.put(`/salary-structures/${id}`, data);
 export const deleteSalaryStructure = (id) => api.delete(`/salary-structures/${id}`);
 
-export const getPayrolls = () => api.get('/payrolls');
+export const getPayrolls = (params) => api.get('/payrolls', { params });
 export const getPayroll = (id) => api.get(`/payrolls/${id}`);
 export const createPayroll = (data) => api.post('/payrolls', data);
 export const approvePayroll = (id) => api.post(`/payrolls/${id}/approve`);

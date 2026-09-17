@@ -29,7 +29,7 @@ class PayrollController extends Controller
             });
         }
 
-        return response()->json($query->orderBy('year', 'desc')->orderBy('month', 'desc')->get());
+        return response()->json($query->orderBy('year', 'desc')->orderBy('month', 'desc')->paginate($request->per_page ?? 20));
     }
 
     public function store(Request $request)

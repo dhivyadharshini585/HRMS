@@ -101,6 +101,14 @@ class LeaveRequestController extends Controller
         // Calculate days server-side
         $fromDate = Carbon::parse($validated['from_date']);
         $toDate = Carbon::parse($validated['to_date']);
+        
+        if ($fromDate->year !== $toDate->year) {
+            return response()->json([
+                'message' => 'Leave requests cannot span across multiple years. Please submit separate requests for each year.',
+                'errors' => ['to_date' => ['Leave requests cannot span across multiple years.']]
+            ], 422);
+        }
+
         $numberOfDays = (float) ($fromDate->diffInDays($toDate) + 1);
 
         // Derive manager_id server-side from employee profile

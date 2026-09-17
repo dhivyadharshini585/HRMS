@@ -27,6 +27,12 @@ function Payroll() {
   };
   
   const [activeTab, setActiveTab] = useState(getTabFromUrl());
+  
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    total: 0
+  });
 
   useEffect(() => {
     fetchPayrolls();
@@ -40,10 +46,15 @@ function Payroll() {
     navigate(`?tab=${id}`);
   };
 
-  const fetchPayrolls = async () => {
+  const fetchPayrolls = async (page = 1) => {
     try {
-      const { data } = await getPayrolls();
-      setPayrolls(data);
+      const { data } = await getPayrolls({ page });
+      setPayrolls(data.data || data);
+      setPagination({
+        currentPage: data.current_page || 1,
+        lastPage: data.last_page || 1,
+        total: data.total || 0
+      });
     } catch (err) {
       setError('Failed to fetch payrolls');
     } finally {
@@ -270,12 +281,25 @@ function Payroll() {
           
           {/* 11. PAGINATION / FOOTER */}
           {payrolls.length > 0 && (
-            <div className="pagination-bar">
-              <span className="pagination-info">Showing 1 to {payrolls.length} of {payrolls.length} records</span>
-              <div className="pagination-btns">
-                <button className="pagination-btn" disabled>&lt;</button>
-                <button className="pagination-btn" style={{ backgroundColor: 'var(--primary-color)', color: 'white', borderColor: 'var(--primary-color)' }}>1</button>
-                <button className="pagination-btn" disabled>&gt;</button>
+            <div className="pagination" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+              <span className="pagination-info">
+                Page {pagination.currentPage} of {pagination.lastPage} ({pagination.total} records total)
+              </span>
+              <div className="pagination-controls" style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  disabled={pagination.currentPage <= 1}
+                  onClick={() => fetchPayrolls(pagination.currentPage - 1)}
+                  className="btn-secondary"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={pagination.currentPage >= pagination.lastPage}
+                  onClick={() => fetchPayrolls(pagination.currentPage + 1)}
+                  className="btn-secondary"
+                >
+                  Next
+                </button>
               </div>
             </div>
           )}

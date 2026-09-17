@@ -54,6 +54,12 @@ const Leave = () => {
   // Filter state for requests table
   const [statusFilter, setStatusFilter] = useState('');
 
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    total: 0
+  });
+
   const fetchBalances = useCallback(async () => {
     try {
       const data = await leaveService.getLeaveBalances();
@@ -72,15 +78,20 @@ const Leave = () => {
     }
   }, []);
 
-  const fetchRequests = useCallback(async () => {
+  const fetchRequests = useCallback(async (page = 1) => {
     setLoading(true);
     setError('');
     try {
-      const params = {};
+      const params = { page };
       if (statusFilter) params.status = statusFilter;
 
       const data = await leaveService.getLeaveRequests(params);
-      setRequests(data.data || data.data?.data || []);
+      setRequests(data.data?.data || data.data || []);
+      setPagination({
+        currentPage: data.data?.current_page || data.current_page || 1,
+        lastPage: data.data?.last_page || data.last_page || 1,
+        total: data.data?.total || data.total || 0
+      });
     } catch (err) {
       setError('Failed to fetch leave requests.');
     } finally {
@@ -140,7 +151,7 @@ const Leave = () => {
       await leaveService.createLeaveRequest(applyFormData);
       setSuccessMessage('Leave request submitted successfully.');
       setIsApplyModalOpen(false);
-      fetchRequests();
+      fetchRequests(1);
       fetchBalances();
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.errors?.from_date?.[0] || 'Failed to submit leave request.');
@@ -492,6 +503,30 @@ const Leave = () => {
               </table>
             )}
           </div>
+          
+          {!loading && requests.length > 0 && (
+            <div className="pagination" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+              <span className="pagination-info">
+                Page {pagination.currentPage} of {pagination.lastPage} ({pagination.total} records total)
+              </span>
+              <div className="pagination-controls" style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  disabled={pagination.currentPage <= 1}
+                  onClick={() => fetchRequests(pagination.currentPage - 1)}
+                  className="btn-secondary"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={pagination.currentPage >= pagination.lastPage}
+                  onClick={() => fetchRequests(pagination.currentPage + 1)}
+                  className="btn-secondary"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

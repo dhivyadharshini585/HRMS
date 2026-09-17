@@ -21,16 +21,28 @@ export default function Employees() {
   const [designationId, setDesignationId] = useState('');
   const [status, setStatus] = useState('');
 
-  const fetchEmployees = async (options = {}) => {
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    total: 0
+  });
+
+  const fetchEmployees = async (page = 1, options = {}) => {
     setLoading(true);
     try {
       const data = await getEmployees({
+        page,
         search,
         department_id: departmentId,
         designation_id: designationId,
         employment_status: status
       }, options);
       setEmployees(data.data);
+      setPagination({
+        currentPage: data.current_page || 1,
+        lastPage: data.last_page || 1,
+        total: data.total || 0
+      });
     } catch (err) {
       if (err.name !== 'CanceledError') {
         console.error(err);
@@ -66,7 +78,7 @@ export default function Employees() {
     const controller = new AbortController();
     
     const timer = setTimeout(() => {
-      fetchEmployees({ signal: controller.signal });
+      fetchEmployees(1, { signal: controller.signal });
     }, 300);
     
     return () => {
@@ -74,6 +86,10 @@ export default function Employees() {
       controller.abort();
     };
   }, [search, departmentId, designationId, status]);
+
+  const handlePageChange = (newPage) => {
+    fetchEmployees(newPage);
+  };
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this employee?')) {
@@ -209,6 +225,30 @@ export default function Employees() {
           </table>
         )}
       </div>
+
+      {!loading && employees.length > 0 && (
+        <div className="pagination" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+          <span className="pagination-info">
+            Page {pagination.currentPage} of {pagination.lastPage} ({pagination.total} records total)
+          </span>
+          <div className="pagination-controls" style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              disabled={pagination.currentPage <= 1}
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              className="btn-secondary"
+            >
+              Previous
+            </button>
+            <button
+              disabled={pagination.currentPage >= pagination.lastPage}
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              className="btn-secondary"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
