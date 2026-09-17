@@ -46,6 +46,15 @@ class TimesheetController extends Controller
         $data = $this->validated($request);
         $data['employee_id'] = $request->user()->employee_id ?? $data['employee_id'];
         
+        // Validate max 24 hours per day
+        $existingHours = Timesheet::where('employee_id', $data['employee_id'])
+            ->where('date', $data['date'])
+            ->sum('hours');
+            
+        if (($existingHours + $data['hours']) > 24) {
+            return response()->json(['message' => "Total hours for {$data['date']} exceed 24."], 422);
+        }
+
         if (isset($data['billable_hours']) || isset($data['non_billable_hours'])) {
             $billable = $data['billable_hours'] ?? $data['hours'];
             $nonBillable = $data['non_billable_hours'] ?? 0;
@@ -141,6 +150,28 @@ class TimesheetController extends Controller
         
         // Remove employee_id from update if present to prevent reassignment
         unset($data['employee_id']);
+
+        $newHours = array_key_exists('hours', $data) ? (float) $data['hours'] : $timesheet->hours;
+        
+        // Validate max 24 hours per day
+        if (array_key_exists('hours', $data) && $newHours !== $timesheet->hours) {
+            $existingHours = Timesheet::where('employee_id', $timesheet->employee_id)
+                ->where('date', $timesheet->date)
+                ->where('id', '!=', $timesheet->id)
+                ->sum('hours');
+                
+            if (($existingHours + $newHours) > 24) {
+                return response()->json(['message' => "Total hours for {$timesheet->date} exceed 24."], 422);
+            }
+        }
+        
+        // Validate billable/non-billable hours sum
+        $billable = array_key_exists('billable_hours', $data) ? (float) $data['billable_hours'] : $timesheet->billable_hours;
+        $nonBillable = array_key_exists('non_billable_hours', $data) ? (float) $data['non_billable_hours'] : $timesheet->non_billable_hours;
+        
+        if (abs(($billable + $nonBillable) - $newHours) > 0.01) {
+            return response()->json(['message' => 'Billable and non-billable hours must equal total hours.'], 422);
+        }
 
         $timesheet->update($data);
 

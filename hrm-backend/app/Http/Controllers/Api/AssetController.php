@@ -83,8 +83,8 @@ class AssetController extends Controller
      */
     public function assign(Request $request, Asset $asset)
     {
-        if ($asset->status === 'Assigned') {
-            return response()->json(['message' => 'Asset is already assigned.'], 422);
+        if ($asset->status !== 'Unassigned') {
+            return response()->json(['message' => "Cannot assign asset. Current status is {$asset->status}."], 422);
         }
 
         $data = $request->validate([
@@ -123,6 +123,10 @@ class AssetController extends Controller
             'condition_at_return' => ['required', Rule::in(['New', 'Good', 'Fair', 'Damaged'])],
             'notes' => ['nullable', 'string'],
         ]);
+
+        if (strtotime($data['returned_date']) < strtotime($assignment->assigned_date)) {
+            return response()->json(['message' => 'Returned date cannot be earlier than the assigned date.'], 422);
+        }
 
         $assignment->update($data + ['status' => 'Returned']);
         $asset->update(['status' => 'Unassigned', 'condition' => $data['condition_at_return']]);

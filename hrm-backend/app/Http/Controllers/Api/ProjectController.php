@@ -65,8 +65,17 @@ class ProjectController extends Controller
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
         ]);
 
-        if (empty($data['start_date']) && empty($project->start_date) && !empty($data['end_date'])) {
+        $finalStartDate = array_key_exists('start_date', $data) ? $data['start_date'] : $project->start_date;
+        $finalEndDate = array_key_exists('end_date', $data) ? $data['end_date'] : $project->end_date;
+
+        if (empty($finalStartDate) && !empty($finalEndDate)) {
             return response()->json(['message' => 'start_date is required when end_date is provided.'], 422);
+        }
+
+        if (!empty($finalStartDate) && !empty($finalEndDate)) {
+            if (strtotime($finalEndDate) < strtotime($finalStartDate)) {
+                return response()->json(['message' => 'end_date must be a date after or equal to start_date.'], 422);
+            }
         }
 
         $project->update($data);
@@ -130,23 +139,24 @@ class ProjectController extends Controller
      */
     public function utilization(Request $request)
     {
-        $query = DB::table('timesheets')
-            ->join('projects', 'projects.id', '=', 'timesheets.project_id')
+        $query = DB::table('projects')
+            ->leftJoin('timesheets', function($join) use ($request) {
+                $join->on('projects.id', '=', 'timesheets.project_id');
+                if ($request->filled('from')) {
+                    $join->where('timesheets.date', '>=', $request->input('from'));
+                }
+                if ($request->filled('to')) {
+                    $join->where('timesheets.date', '<=', $request->input('to'));
+                }
+            })
             ->select(
                 'projects.id as project_id',
                 'projects.name as name',
-                DB::raw('SUM(timesheets.hours) as hours'),
-                DB::raw('SUM(timesheets.billable_hours) as billable_hours'),
-                DB::raw('SUM(timesheets.non_billable_hours) as non_billable_hours')
+                DB::raw('COALESCE(SUM(timesheets.hours), 0) as hours'),
+                DB::raw('COALESCE(SUM(timesheets.billable_hours), 0) as billable_hours'),
+                DB::raw('COALESCE(SUM(timesheets.non_billable_hours), 0) as non_billable_hours')
             )
             ->groupBy('projects.id', 'projects.name');
-
-        if ($request->filled('from')) {
-            $query->where('timesheets.date', '>=', $request->input('from'));
-        }
-        if ($request->filled('to')) {
-            $query->where('timesheets.date', '<=', $request->input('to'));
-        }
 
         $projects = $query->get();
 
