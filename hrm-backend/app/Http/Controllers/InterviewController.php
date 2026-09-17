@@ -29,18 +29,17 @@ class InterviewController extends Controller
         $user = $request->user();
         $isHR = $user->hasAnyRole(['Super Admin', 'HR Admin', 'HR Executive']);
 
-        // Restricted manager scope: only manager as interviewer or manager's direct reports
+        // Restricted scope: HR sees all. Managers see theirs + direct reports. Others see only theirs.
         if (!$isHR) {
+            $employeeId = $user->employee?->id ?? 0;
+            $allowedInterviewerIds = [$employeeId];
+            
             if ($user->hasRole('Manager')) {
-                $managerEmployee = $user->employee;
-                $managerEmployeeId = $managerEmployee?->id ?? 0;
-                $directReportIds = Employee::where('manager_id', $managerEmployeeId)->pluck('id')->toArray();
-                $allowedInterviewerIds = array_merge([$managerEmployeeId], $directReportIds);
-
-                $query->whereIn('interviewer_employee_id', $allowedInterviewerIds);
-            } else {
-                return response()->json(['message' => 'Unauthorized access to interviews.'], Response::HTTP_FORBIDDEN);
+                $directReportIds = Employee::where('manager_id', $employeeId)->pluck('id')->toArray();
+                $allowedInterviewerIds = array_merge($allowedInterviewerIds, $directReportIds);
             }
+            
+            $query->whereIn('interviewer_employee_id', $allowedInterviewerIds);
         }
 
         // Filters
@@ -129,20 +128,17 @@ class InterviewController extends Controller
         $isHR = $user->hasAnyRole(['Super Admin', 'HR Admin', 'HR Executive']);
 
         if (!$isHR) {
+            $employeeId = $user->employee?->id ?? 0;
+            $allowedInterviewerIds = [$employeeId];
+            
             if ($user->hasRole('Manager')) {
-                $managerEmployee = $user->employee;
-                $managerEmployeeId = $managerEmployee?->id ?? 0;
-                $directReportIds = Employee::where('manager_id', $managerEmployeeId)->pluck('id')->toArray();
-                $allowedInterviewerIds = array_merge([$managerEmployeeId], $directReportIds);
+                $directReportIds = Employee::where('manager_id', $employeeId)->pluck('id')->toArray();
+                $allowedInterviewerIds = array_merge($allowedInterviewerIds, $directReportIds);
+            }
 
-                if (!in_array($interview->interviewer_employee_id, $allowedInterviewerIds)) {
-                    return response()->json([
-                        'message' => 'Unauthorized access to this interview schedule.',
-                    ], Response::HTTP_FORBIDDEN);
-                }
-            } else {
+            if (!in_array($interview->interviewer_employee_id, $allowedInterviewerIds)) {
                 return response()->json([
-                    'message' => 'Unauthorized access to interviews.',
+                    'message' => 'Unauthorized access to this interview schedule.',
                 ], Response::HTTP_FORBIDDEN);
             }
         }

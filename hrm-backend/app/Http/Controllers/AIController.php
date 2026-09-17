@@ -120,6 +120,10 @@ class AIController extends Controller
             return response()->json(['error' => 'Destructive SQL keywords detected.', 'query' => $sqlQuery], 403);
         }
         
+        if (preg_match('/\b(users|personal_access_tokens|password_resets|failed_jobs|migrations|sessions)\b/i', $sqlQuery)) {
+            return response()->json(['error' => 'Access to sensitive system tables is strictly prohibited.', 'query' => $sqlQuery], 403);
+        }
+        
         if (strpos($sqlQuery, ';') !== false) {
              return response()->json(['error' => 'Multiple statements detected.', 'query' => $sqlQuery], 403);
         }

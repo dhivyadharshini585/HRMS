@@ -12,6 +12,7 @@ import Register from '../pages/Auth/Register';
 import ForgotPassword from '../pages/Auth/ForgotPassword';
 
 // Module pages
+import Home from '../pages/Home';
 import Dashboard from '../pages/Dashboard';
 import Employees from '../pages/Employees';
 import EmployeeForm from '../pages/Employees/EmployeeForm';
@@ -47,11 +48,15 @@ import Onboarding from '../pages/Onboarding';
 import OnboardingDetails from '../pages/Onboarding/Details';
 
 export const router = createBrowserRouter([
+  // Home (Landing or Dashboard based on auth and subdomain)
+  { path: ROUTES.DASHBOARD, element: <Home /> },
+
   // Auth routes (outside AppLayout, guest only)
   {
     element: <GuestRoute />,
     children: [
       { path: ROUTES.LOGIN, element: <Login /> },
+      { path: ROUTES.REGISTER, element: <Register /> },
       { path: ROUTES.FORGOT_PASSWORD, element: <ForgotPassword /> },
     ]
   },
@@ -63,8 +68,8 @@ export const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
-          // DASHBOARD: all six roles
-          { path: ROUTES.DASHBOARD, element: <Dashboard /> },
+          // DASHBOARD explicitly if needed
+          // { path: ROUTES.DASHBOARD, element: <Dashboard /> },
 
           // SELF PROFILE: all six roles
           { path: ROUTES.EMPLOYEE_ME, element: <EmployeeView /> },
