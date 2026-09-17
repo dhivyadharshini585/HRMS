@@ -161,23 +161,6 @@ class AttendanceController extends Controller
                 ->where('attendance_date', $attendanceDate)
                 ->first();
 
-<<<<<<< Updated upstream
-        if ($existing) {
-            $existing->update([
-                'check_in' => $now,
-                'status' => $status,
-                'remarks' => $request->input('remarks', $existing->remarks),
-            ]);
-            $attendance = $existing;
-        } else {
-            $attendance = Attendance::create([
-                'employee_id' => $employee->id,
-                'attendance_date' => $attendanceDate,
-                'check_in' => $now,
-                'status' => $status,
-                'remarks' => $request->input('remarks'),
-            ]);
-=======
             if ($existing && $existing->check_in !== null) {
                 return response()->json(['message' => 'Already checked in for today.'], 422);
             }
@@ -222,7 +205,6 @@ class AttendanceController extends Controller
             ], 201);
         } finally {
             $lock->release();
->>>>>>> Stashed changes
         }
     }
 
@@ -327,75 +309,6 @@ class AttendanceController extends Controller
         } finally {
             $lock->release();
         }
-<<<<<<< Updated upstream
 
-        if ($attendance->check_out !== null) {
-            return response()->json(['message' => 'Already checked out for today.'], 422);
-        }
-
-        $oldValues = $attendance->toArray();
-
-        // Calculate duration & final deterministic status
-        $checkIn = Carbon::parse($attendance->check_in);
-        $workingMinutes = (int) $checkIn->diffInMinutes($now);
-
-        // Expected check-in time for Late logic recalculation if needed
-        $dateStr = Carbon::parse($attendance->attendance_date)->toDateString();
-        $expectedCheckIn = Carbon::parse($dateStr . ' ' . $shift->start_time);
-        $lateThreshold = $expectedCheckIn->copy()->addMinutes($shift->grace_period_minutes ?? 0);
-
-        // Status calculation rule:
-        // 1. working_minutes < 240 => Half Day
-        // 2. otherwise check_in > lateThreshold => Late
-        // 3. otherwise => Present
-        if ($workingMinutes < 240) {
-            $finalStatus = 'Half Day';
-        } elseif ($checkIn->greaterThan($lateThreshold)) {
-            $finalStatus = 'Late';
-        } else {
-            $finalStatus = 'Present';
-        }
-
-        // Overtime calculation
-        // Ensure overtime logic is safe and only works if overtime is enabled on the shift
-        $overtimeMinutes = 0;
-        if ($shift->overtime_enabled && $shift->overtime_threshold_minutes !== null) {
-            // Expected end time
-            $expectedEndTime = Carbon::parse($dateStr . ' ' . $shift->end_time);
-            if ($isNightShift) {
-                $expectedEndTime->addDay();
-            }
-            
-            // Difference between actual checkout and expected end time
-            if ($now->greaterThan($expectedEndTime)) {
-                $extraMinutes = (int) $expectedEndTime->diffInMinutes($now);
-                if ($extraMinutes >= $shift->overtime_threshold_minutes) {
-                    $overtimeMinutes = $extraMinutes;
-                }
-            }
-        }
-
-        $attendance->update([
-            'check_out' => $now,
-            'working_minutes' => $workingMinutes,
-            'overtime_minutes' => $overtimeMinutes,
-            'status' => $finalStatus,
-            'remarks' => $request->input('remarks', $attendance->remarks),
-        ]);
-        
-        if ($overtimeMinutes > 0) {
-             $attendance->update(['remarks' => trim($attendance->remarks . ' (Overtime: ' . $overtimeMinutes . ' mins)')]);
-        }
-
-        $fresh = $attendance->fresh();
-
-        AuditService::logModelChange('attendance.check_out', $fresh, $oldValues, $fresh->toArray(), "Checked out at {$now->toTimeString()}");
-
-        return response()->json([
-            'message' => 'Checked out successfully.',
-            'attendance' => $fresh,
-        ], 200);
-=======
->>>>>>> Stashed changes
     }
 }

@@ -210,8 +210,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/payrolls/{payroll}', [App\Http\Controllers\PayrollController::class, 'show'])->middleware('permission:payroll.view');
     Route::post('/payrolls/{payroll}/approve', [App\Http\Controllers\PayrollController::class, 'approve'])->middleware('permission:payroll.approve');
 
-<<<<<<< Updated upstream
-=======
     // Statutory Payroll Rules
     Route::get('/payroll/statutory-rules', [App\Http\Controllers\StatutoryRuleController::class, 'index'])->middleware('permission:payroll.view');
     Route::post('/payroll/statutory-rules', [App\Http\Controllers\StatutoryRuleController::class, 'store'])->middleware('permission:payroll.manage');
@@ -219,8 +217,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/payroll/statutory-rules/{id}', [App\Http\Controllers\StatutoryRuleController::class, 'update'])->middleware('permission:payroll.manage');
     Route::patch('/payroll/statutory-rules/{id}/activate', [App\Http\Controllers\StatutoryRuleController::class, 'activate'])->middleware('permission:payroll.manage');
     Route::patch('/payroll/statutory-rules/{id}/deactivate', [App\Http\Controllers\StatutoryRuleController::class, 'deactivate'])->middleware('permission:payroll.manage');
-
->>>>>>> Stashed changes
     // Payslips
     Route::post('/payrolls/{payroll}/payslips', [App\Http\Controllers\PayslipController::class, 'generate'])->middleware('permission:payroll.manage');
     Route::get('/payslips/{payslip}', [App\Http\Controllers\PayslipController::class, 'show'])->middleware('permission:payroll.view');
