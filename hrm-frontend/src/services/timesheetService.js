@@ -10,9 +10,11 @@ export const timesheetService = {
     const response = await api.post(endpoint, data);
     return response.data;
   },
-  getProjects: async () => {
-    const response = await api.get('/projects');
-    return response.data;
+  getProjects: async (params = {}) => {
+    const response = await api.get('/projects', { params });
+    return Array.isArray(response.data?.data)
+      ? response.data.data
+      : (Array.isArray(response.data) ? response.data : []);
   },
   getUtilization: async () => {
     const response = await api.get('/projects-utilization');
