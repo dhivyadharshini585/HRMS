@@ -192,11 +192,18 @@ export const router = createBrowserRouter([
             ]
           },
 
-          // PERFORMANCE: Super Admin, HR Admin, Manager, Employee
+          // ADMIN PERFORMANCE CYCLES: Super Admin, HR Admin, Manager
           {
-            element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'Manager', 'Employee']} />,
+            element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'Manager']} />,
             children: [
               { path: ROUTES.PERFORMANCE, element: <Performance /> },
+            ]
+          },
+
+          // PERFORMANCE SELF SERVICE & GOALS/REVIEWS: Super Admin, HR Admin, HR Executive, Manager, Employee
+          {
+            element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive', 'Manager', 'Employee']} />,
+            children: [
               { path: ROUTES.GOALS, element: <Goals /> },
               { path: ROUTES.KPIS, element: <KPIs /> },
               { path: ROUTES.REVIEWS, element: <Reviews /> },
@@ -226,9 +233,9 @@ export const router = createBrowserRouter([
             children: [{ path: ROUTES.PROJECTS, element: <Projects /> }]
           },
 
-          // TIMESHEETS: Super Admin, HR Admin, Manager, Employee, Finance/Payroll Admin
+          // TIMESHEETS: Super Admin, HR Admin, HR Executive, Manager, Employee, Finance/Payroll Admin
           {
-            element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'Manager', 'Employee', 'Finance/Payroll Admin']} />,
+            element: <ProtectedRoute roles={['Super Admin', 'HR Admin', 'HR Executive', 'Manager', 'Employee', 'Finance/Payroll Admin']} />,
             children: [{ path: ROUTES.TIMESHEETS, element: <Timesheets /> }]
           },
 

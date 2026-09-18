@@ -119,6 +119,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'holidays.view', 'holidays.manage',
             'leave_types.view', 'leave_types.manage',
             'reports.attendance', 'reports.leave',
+            'timesheets.view',
         ]);
 
         $manager = Role::firstOrCreate(['name' => 'Manager', 'guard_name' => 'web']);
