@@ -83,6 +83,45 @@ class AIService
     }
 
     /**
+     * Determines whether a question is a general HR informational question
+     */
+    public function isGeneralHRQuestion(string $question): bool
+    {
+        $q = strtolower(trim($question));
+        if (preg_match('/^(how|what|why|explain|can you explain|tell me about|guide|help)\b/i', $q)) {
+            if (!preg_match('/\b(show|list|get|fetch|count|display|all|select)\b/i', $q)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Answers general HR informational questions in natural language
+     */
+    public function answerGeneralHRQuestion(string $question): string
+    {
+        $prompt = "You are an expert HR Assistant in an HRMS system. "
+            . "Answer the following general HR question clearly, professionally, and concisely in natural language:\n\"" . $question . "\"";
+
+        $response = $this->callGemini($prompt);
+        if (!empty($response)) {
+            return trim($response);
+        }
+
+        $q = strtolower($question);
+        if (strpos($q, 'attendance') !== false) {
+            return "Attendance records log daily employee check-ins, check-outs, and attendance statuses (Present, Absent, Leave). You can view and manage attendance from the Attendance tab in the main sidebar.";
+        } elseif (strpos($q, 'leave') !== false) {
+            return "Leave management allows employees to apply for time off and managers/HR to approve or reject leave requests. Check your Leave Balances page to view your entitlement.";
+        } elseif (strpos($q, 'payroll') !== false) {
+            return "Payroll processing handles monthly salaries, deductions, tax rules, and generates official payslips for employees.";
+        }
+
+        return "I am your AI HR Assistant. You can ask me general HR guidance questions or query organizational data.";
+    }
+
+    /**
      * Returns a validated, read-only SQL query
      */
     public function generateHRQuery(string $userQuestion, string $schema): string

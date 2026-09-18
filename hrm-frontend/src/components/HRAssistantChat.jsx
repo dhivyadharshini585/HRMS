@@ -31,10 +31,11 @@ const HRAssistantChat = () => {
 
     try {
       const response = await aiService.askHRAssistant(userMessage);
-      setMessages(prev => [...prev, { role: 'assistant', content: response.answer }]);
+      const answer = response.answer || response.message || "I am currently unable to process your request. Please try again.";
+      setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
     } catch (error) {
-      const errMsg = error.response?.data?.error || 'Failed to get a response from the AI.';
-      setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${errMsg}` }]);
+      const errMsg = error.response?.data?.answer || error.response?.data?.message || 'I am currently unable to answer that question. Please try asking in a different way.';
+      setMessages(prev => [...prev, { role: 'assistant', content: errMsg }]);
     } finally {
       setIsLoading(false);
     }

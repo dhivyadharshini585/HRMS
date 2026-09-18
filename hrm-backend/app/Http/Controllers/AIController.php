@@ -94,6 +94,18 @@ class AIController extends Controller
             'question' => 'required|string|max:1000',
         ]);
 
+        $question = trim($request->question);
+
+        // A) Check if this is a general informational HR question
+        if ($this->aiService->isGeneralHRQuestion($question)) {
+            try {
+                $answer = $this->aiService->answerGeneralHRQuestion($question);
+                return response()->json(['answer' => $answer]);
+            } catch (\Exception $e) {
+                return response()->json(['answer' => 'I am an HR assistant. How can I help you with your attendance, leave, or HR processes?']);
+            }
+        }
+
         $schema = "
         Table employees: id, first_name, last_name, email, department_id, designation_id, status (Active, Inactive), joining_date
         Table departments: id, name
@@ -106,28 +118,37 @@ class AIController extends Controller
         ";
 
         try {
-            $sqlQuery = $this->aiService->generateHRQuery($request->question, $schema);
+            $sqlQuery = $this->aiService->generateHRQuery($question, $schema);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'AI Service failed to generate query: ' . $e->getMessage()], 502);
+            return response()->json(['answer' => 'I am unable to retrieve the requested information at this time. Please try again.']);
+        }
+
+        if (empty(trim($sqlQuery))) {
+            // Fallback for general questions or empty query generation
+            try {
+                $answer = $this->aiService->answerGeneralHRQuestion($question);
+                return response()->json(['answer' => $answer]);
+            } catch (\Exception $e) {
+                return response()->json(['answer' => 'I could not find specific data for that request. Feel free to ask general HR questions or request employee data.']);
+            }
         }
 
         // Security check - strip SQL comments first
         $cleanQuery = preg_replace('/\/\*.*?\*\/|--[^\r\n]*|#[^\r\n]*/s', '', $sqlQuery);
 
-        if (!preg_match('/^\s*SELECT\b/i', $cleanQuery)) {
-            return response()->json(['error' => 'Invalid query generated. Only SELECT queries are allowed.', 'query' => $sqlQuery], 403);
-        }
-
-        if (strpos($cleanQuery, ';') !== false) {
-             return response()->json(['error' => 'Multiple statements detected.', 'query' => $sqlQuery], 403);
-        }
-
-        if (preg_match('/\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE|EXEC|EXECUTE|SLEEP|BENCHMARK|OUTFILE|DUMPFILE)\b/i', $cleanQuery)) {
-            return response()->json(['error' => 'Destructive SQL keywords detected.', 'query' => $sqlQuery], 403);
-        }
-
+        // Check sensitive system tables first
         if (preg_match('/\b(users|personal_access_tokens|password_resets|failed_jobs|migrations|sessions|oauth_\w+)\b/i', $cleanQuery)) {
-            return response()->json(['error' => 'Access to sensitive system tables is strictly prohibited.', 'query' => $sqlQuery], 403);
+            return response()->json(['answer' => 'You do not have permission to access that sensitive system information.']);
+        }
+
+        // Check single statement
+        if (strpos($cleanQuery, ';') !== false) {
+             return response()->json(['answer' => 'I can only process a single query at a time.']);
+        }
+
+        // Check DML/DDL destructive keywords or non-SELECT
+        if (!preg_match('/^\s*SELECT\b/i', $cleanQuery) || preg_match('/\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE|EXEC|EXECUTE|SLEEP|BENCHMARK|OUTFILE|DUMPFILE)\b/i', $cleanQuery)) {
+            return response()->json(['answer' => "I can only provide HR information and read-only HR data. I can't perform that action."]);
         }
 
         // Dynamically append LIMIT 100 if not present to prevent massive result sets
@@ -141,28 +162,27 @@ class AIController extends Controller
             $results = DB::connection($connectionName)->select($sqlQuery);
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Failed to execute query.',
-                'message' => $e->getMessage(),
-                'query' => $sqlQuery
-            ], 500);
+                'answer' => "I couldn't retrieve the requested data. Please refine your search."
+            ]);
         }
 
         if (empty($results)) {
             return response()->json([
-                'answer' => "I couldn't find any data to answer that question.",
-                'query' => $sqlQuery
+                'answer' => "I couldn't find any data to answer that question."
             ]);
         }
 
         try {
-            $answer = $this->aiService->answerFromResults($request->question, $results);
+            $answer = $this->aiService->answerFromResults($question, $results);
+            if (empty($answer)) {
+                $answer = "Retrieved " . count($results) . " matching record(s).";
+            }
         } catch (\Exception $e) {
-            return response()->json(['error' => 'AI Service failed to formulate answer: ' . $e->getMessage()], 502);
+            $answer = "Retrieved " . count($results) . " matching record(s).";
         }
 
         return response()->json([
-            'answer' => $answer,
-            'query' => $sqlQuery
+            'answer' => $answer
         ]);
     }
 }

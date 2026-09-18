@@ -399,4 +399,33 @@ class Phase6RBACTest extends TestCase
         $responseApprove = $this->actingAs($hrExecUser)->postJson('/api/timesheets/' . $ts->id . '/approve');
         $responseApprove->assertStatus(403);
     }
+
+    public function test_hr_executive_has_timesheets_view_permission()
+    {
+        $hrExecUser = $this->createUserWithRole('HR Executive');
+        $this->assertTrue($hrExecUser->hasPermissionTo('timesheets.view'));
+        $this->assertFalse($hrExecUser->hasPermissionTo('timesheets.approve'));
+    }
+
+    public function test_hr_executive_can_view_own_timesheet()
+    {
+        $hrExecUser = $this->createUserWithRole('HR Executive');
+        $hrExecEmp = $this->createEmployeeForUser($hrExecUser);
+
+        $project = Project::create(['name' => 'P1', 'status' => 'Active']);
+
+        $ts = Timesheet::create([
+            'employee_id' => $hrExecEmp->id,
+            'project_id' => $project->id,
+            'date' => '2026-09-15',
+            'hours' => 8,
+            'status' => 'Draft',
+        ]);
+
+        $responseIndex = $this->actingAs($hrExecUser)->getJson('/api/timesheets');
+        $responseIndex->assertStatus(200);
+
+        $responseShow = $this->actingAs($hrExecUser)->getJson('/api/timesheets/' . $ts->id);
+        $responseShow->assertStatus(200);
+    }
 }
