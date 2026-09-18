@@ -38,15 +38,38 @@ export default function LeaveReport() {
 
   // Load Leave Types and Departments
   useEffect(() => {
-    leaveService.getLeaveTypes?.()
-      .then(res => setLeaveTypes(res?.data || res || []))
-      .catch(err => console.error('Failed to load leave types:', err));
+    const fetchDropdowns = async () => {
+      try {
+        const promises = [
+          leaveService.getLeaveTypes?.().catch(err => {
+            console.error('Failed to load leave types:', err);
+            return [];
+          }),
+        ];
 
-    if (canFilterEmployeeOrDept) {
-      departmentService.getDepartments?.()
-        .then(res => setDepartments(res?.data || res || []))
-        .catch(err => console.error('Failed to load departments:', err));
-    }
+        if (canFilterEmployeeOrDept) {
+          promises.push(
+            departmentService.getDepartments?.().catch(err => {
+              console.error('Failed to load departments:', err);
+              return [];
+            })
+          );
+        }
+
+        const [typesRes, deptsRes] = await Promise.all(promises);
+
+        if (typesRes) {
+          setLeaveTypes(typesRes?.data || typesRes || []);
+        }
+        if (deptsRes) {
+          setDepartments(deptsRes?.data || deptsRes || []);
+        }
+      } catch (err) {
+        console.error('Failed to load dropdown options:', err);
+      }
+    };
+
+    fetchDropdowns();
   }, [canFilterEmployeeOrDept]);
 
   const fetchReport = useCallback(async (page = 1) => {
