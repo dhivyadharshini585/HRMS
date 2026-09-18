@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import '../../styles/common.css';
 
 export default function StatutoryRules() {
   const [rules, setRules] = useState([]);
@@ -50,7 +51,6 @@ export default function StatutoryRules() {
 
   const handleSlabChange = (index, field, value) => {
     const updatedSlabs = [...formData.slabs];
-    // If it's max and the user leaves it blank or "null", allow open-ended slab
     updatedSlabs[index][field] = value === '' && field === 'max' ? null : value;
     setFormData(prev => ({
       ...prev,
@@ -124,187 +124,192 @@ export default function StatutoryRules() {
     }
   };
 
-  if (loading) {
-    return <div className="p-6 text-center">Loading statutory rules...</div>;
-  }
-
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="page-container">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Statutory Payroll Rules</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage PF, ESI, PT, TDS, and other statutory deductions</p>
+          <h2 className="page-title">Statutory Payroll Rules</h2>
+          <p className="page-subtitle">Manage PF, ESI, PT, TDS, and statutory deduction rules</p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center font-medium shadow-sm transition-colors"
-        >
-          <span className="mr-1.5 text-lg leading-none">+</span>
-          Add Rule
+        <button className="btn-primary" onClick={openAddModal}>
+          + Add Rule
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Rule Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Value</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Effective From</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-slate-200">
-            {rules.map((rule) => (
-              <tr key={rule.id} className="hover:bg-slate-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="font-medium text-slate-900">{rule.rule_name}</div>
-                  <div className="text-xs text-slate-500">Base: {rule.base_component || 'N/A'}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                  {rule.rule_type}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                  {rule.rule_type === 'Percentage' ? `${rule.percentage}%` :
-                   rule.rule_type === 'Fixed' ? `₹${rule.fixed_amount}` : 'Slab Based'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                  {new Date(rule.effective_from).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${rule.is_active ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'}`}>
-                    {rule.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex justify-end space-x-2">
-                    <button
-                      onClick={() => toggleStatus(rule)}
-                      className={`p-1.5 rounded-md ${rule.is_active ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'}`}
-                      title={rule.is_active ? 'Deactivate' : 'Activate'}
-                    >
-                      {rule.is_active ? <span className="font-bold text-lg leading-none">✕</span> : <span className="font-bold text-lg leading-none">✓</span>}
-                    </button>
-                    <button
-                      onClick={() => openEditModal(rule)}
-                      className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 px-2 py-1 rounded-md text-sm font-medium"
-                      title="Edit Rule"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {rules.length === 0 && (
+      <div className="table-container">
+        {loading ? (
+          <div className="state-container">
+            <p>Loading statutory rules...</p>
+          </div>
+        ) : (
+          <table className="data-table">
+            <thead>
               <tr>
-                <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
-                  No statutory rules configured.
-                </td>
+                <th>Rule Name</th>
+                <th>Type</th>
+                <th>Base Component</th>
+                <th>Value</th>
+                <th>Effective From</th>
+                <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rules.map((rule) => (
+                <tr key={rule.id}>
+                  <td>
+                    <div style={{ fontWeight: 600 }}>{rule.rule_name}</div>
+                  </td>
+                  <td>{rule.rule_type}</td>
+                  <td>{rule.base_component || 'N/A'}</td>
+                  <td>
+                    {rule.rule_type === 'Percentage' ? `${rule.percentage}%` :
+                     rule.rule_type === 'Fixed' ? `₹${rule.fixed_amount}` : 'Slab Based'}
+                  </td>
+                  <td>
+                    {rule.effective_from ? new Date(rule.effective_from).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                  </td>
+                  <td>
+                    <span className={`badge ${rule.is_active ? 'badge-success' : 'badge-neutral'}`}>
+                      {rule.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'inline-flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                      <button
+                        onClick={() => openEditModal(rule)}
+                        className="btn-secondary"
+                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => toggleStatus(rule)}
+                        className={rule.is_active ? "btn-danger" : "btn-success"}
+                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                      >
+                        {rule.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {rules.length === 0 && (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>
+                    No statutory rules configured.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-slate-200">
-              <h2 className="text-xl font-semibold text-slate-900">
-                {editingRule ? 'Edit Statutory Rule' : 'Add Statutory Rule'}
-              </h2>
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <h3>{editingRule ? 'Edit Statutory Rule' : 'Add Statutory Rule'}</h3>
+              <button
+                onClick={() => setShowModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1, color: 'var(--text-secondary)' }}
+              >
+                &times;
+              </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Rule Name (e.g. PF, ESI, PT)</label>
-                <input
-                  type="text"
-                  name="rule_name"
-                  required
-                  value={formData.rule_name}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Rule Type</label>
-                <select
-                  name="rule_type"
-                  value={formData.rule_type}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="Percentage">Percentage</option>
-                  <option value="Fixed">Fixed Amount</option>
-                  <option value="Slab">Slab Based</option>
-                </select>
-              </div>
-
-              {formData.rule_type === 'Percentage' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Base Component</label>
-                    <select
-                      name="base_component"
-                      value={formData.base_component}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="Basic Salary">Basic Salary</option>
-                      <option value="Gross Earnings">Gross Earnings</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Percentage (%)</label>
-                    <input
-                      type="number"
-                      name="percentage"
-                      step="0.01"
-                      required
-                      value={formData.percentage}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </>
-              )}
-
-              {formData.rule_type === 'Fixed' && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Fixed Amount (₹)</label>
+            <form onSubmit={handleSubmit}>
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div className="filter-group">
+                  <label className="filter-label">Rule Name * (e.g. PF, ESI, PT, TDS)</label>
                   <input
-                    type="number"
-                    name="fixed_amount"
-                    step="0.01"
+                    type="text"
+                    name="rule_name"
                     required
-                    value={formData.fixed_amount}
+                    value={formData.rule_name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="form-control"
+                    placeholder="e.g. Provident Fund (PF)"
                   />
                 </div>
-              )}
 
-              {formData.rule_type === 'Slab' && (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-sm font-medium text-slate-700">Slab Configuration</label>
-                    <button
-                      type="button"
-                      onClick={handleAddSlab}
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      + Add Slab
-                    </button>
+                <div className="filter-group">
+                  <label className="filter-label">Rule Type *</label>
+                  <select
+                    name="rule_type"
+                    value={formData.rule_type}
+                    onChange={handleInputChange}
+                    className="form-control"
+                  >
+                    <option value="Percentage">Percentage</option>
+                    <option value="Fixed">Fixed Amount</option>
+                    <option value="Slab">Slab Based</option>
+                  </select>
+                </div>
+
+                {formData.rule_type === 'Percentage' && (
+                  <>
+                    <div className="filter-group">
+                      <label className="filter-label">Base Component *</label>
+                      <select
+                        name="base_component"
+                        value={formData.base_component}
+                        onChange={handleInputChange}
+                        className="form-control"
+                      >
+                        <option value="Basic Salary">Basic Salary</option>
+                        <option value="Gross Earnings">Gross Earnings</option>
+                      </select>
+                    </div>
+                    <div className="filter-group">
+                      <label className="filter-label">Percentage (%) *</label>
+                      <input
+                        type="number"
+                        name="percentage"
+                        step="0.01"
+                        required
+                        value={formData.percentage}
+                        onChange={handleInputChange}
+                        className="form-control"
+                        placeholder="e.g. 12"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {formData.rule_type === 'Fixed' && (
+                  <div className="filter-group">
+                    <label className="filter-label">Fixed Amount (₹) *</label>
+                    <input
+                      type="number"
+                      name="fixed_amount"
+                      step="0.01"
+                      required
+                      value={formData.fixed_amount}
+                      onChange={handleInputChange}
+                      className="form-control"
+                      placeholder="e.g. 200"
+                    />
                   </div>
+                )}
 
-                  {formData.slabs.map((slab, index) => (
-                    <div key={index} className="flex space-x-2 items-center bg-slate-50 p-2 rounded border border-slate-200">
-                      <div className="flex-1">
+                {formData.rule_type === 'Slab' && (
+                  <div className="filter-group">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <label className="filter-label">Slab Configuration</label>
+                      <button
+                        type="button"
+                        onClick={handleAddSlab}
+                        className="btn-secondary"
+                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                      >
+                        + Add Slab
+                      </button>
+                    </div>
+
+                    {formData.slabs.map((slab, index) => (
+                      <div key={index} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
                         <input
                           type="number"
                           placeholder="Min (₹)"
@@ -312,22 +317,20 @@ export default function StatutoryRules() {
                           required
                           value={slab.min !== null ? slab.min : ''}
                           onChange={(e) => handleSlabChange(index, 'min', e.target.value)}
-                          className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded shadow-sm"
+                          className="form-control"
+                          style={{ flex: 1 }}
                         />
-                      </div>
-                      <div className="text-slate-400">-</div>
-                      <div className="flex-1">
+                        <span>-</span>
                         <input
                           type="number"
-                          placeholder="Max (Leave empty for infinity)"
+                          placeholder="Max (empty = ∞)"
                           step="0.01"
                           value={slab.max !== null ? slab.max : ''}
                           onChange={(e) => handleSlabChange(index, 'max', e.target.value)}
-                          className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded shadow-sm"
+                          className="form-control"
+                          style={{ flex: 1 }}
                         />
-                      </div>
-                      <div className="text-slate-400">=</div>
-                      <div className="flex-1">
+                        <span>=</span>
                         <input
                           type="number"
                           placeholder="Amount (₹)"
@@ -335,64 +338,59 @@ export default function StatutoryRules() {
                           required
                           value={slab.amount !== null ? slab.amount : ''}
                           onChange={(e) => handleSlabChange(index, 'amount', e.target.value)}
-                          className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded shadow-sm"
+                          className="form-control"
+                          style={{ flex: 1 }}
                         />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSlab(index)}
+                          className="btn-danger"
+                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                        >
+                          &times;
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSlab(index)}
-                        className="text-red-500 hover:text-red-700 p-1 px-2 font-bold text-lg leading-none"
-                        title="Remove Slab"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
+                    ))}
 
-                  {formData.slabs.length === 0 && (
-                    <div className="text-sm text-slate-500 italic">No slabs added yet. Click "+ Add Slab" to begin.</div>
-                  )}
+                    {formData.slabs.length === 0 && (
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                        No slabs added yet. Click "+ Add Slab" to begin.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="filter-group">
+                  <label className="filter-label">Effective From *</label>
+                  <input
+                    type="date"
+                    name="effective_from"
+                    required
+                    value={formData.effective_from}
+                    onChange={handleInputChange}
+                    className="form-control"
+                  />
                 </div>
-              )}
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Effective From</label>
-                <input
-                  type="date"
-                  name="effective_from"
-                  required
-                  value={formData.effective_from}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    name="is_active"
+                    id="is_active"
+                    checked={formData.is_active}
+                    onChange={handleInputChange}
+                  />
+                  <label htmlFor="is_active" style={{ fontSize: '0.875rem', cursor: 'pointer', color: 'var(--text-primary)' }}>
+                    Active immediately
+                  </label>
+                </div>
               </div>
 
-              <div className="flex items-center pt-2">
-                <input
-                  type="checkbox"
-                  name="is_active"
-                  id="is_active"
-                  checked={formData.is_active}
-                  onChange={handleInputChange}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-                />
-                <label htmlFor="is_active" className="ml-2 block text-sm text-slate-900">
-                  Active immediately
-                </label>
-              </div>
-
-              <div className="pt-4 flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
+                <button type="submit" className="btn-primary">
                   {editingRule ? 'Update Rule' : 'Save Rule'}
                 </button>
               </div>
