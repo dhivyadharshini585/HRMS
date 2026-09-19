@@ -432,4 +432,48 @@ class AttendanceTest extends TestCase
         $response = $this->actingAs($this->employeeUser1)->postJson('/api/attendance/check-in', $payload);
         $response->assertStatus(422);
     }
+
+    /** @test */
+    public function test_22_scope_mine_returns_only_authenticated_users_attendance()
+    {
+        $superAdminEmp = Employee::create([
+            'user_id' => $this->superAdmin->id,
+            'employee_code' => 'EMP-SA01',
+            'first_name' => 'Super',
+            'last_name' => 'Admin',
+            'email' => $this->superAdmin->email,
+            'department_id' => $this->employee1->department_id,
+            'designation_id' => $this->employee1->designation_id,
+            'employment_type' => 'Full-time',
+            'employment_status' => 'Active',
+            'date_of_joining' => '2025-01-01',
+        ]);
+
+        Attendance::create([
+            'employee_id' => $superAdminEmp->id,
+            'attendance_date' => now()->toDateString(),
+            'check_in' => now(),
+            'status' => 'Present',
+        ]);
+
+        Attendance::create([
+            'employee_id' => $this->employee1->id,
+            'attendance_date' => now()->toDateString(),
+            'check_in' => now(),
+            'status' => 'Present',
+        ]);
+
+        // Request with scope=mine for Super Admin
+        $responseMine = $this->actingAs($this->superAdmin)->getJson('/api/attendance?scope=mine');
+        $responseMine->assertStatus(200);
+        $mineData = $responseMine->json('data');
+        $this->assertCount(1, $mineData);
+        $this->assertEquals($superAdminEmp->id, $mineData[0]['employee_id']);
+
+        // Request without scope=mine (Directory view) for Super Admin
+        $responseAll = $this->actingAs($this->superAdmin)->getJson('/api/attendance?scope=all');
+        $responseAll->assertStatus(200);
+        $allData = $responseAll->json('data');
+        $this->assertCount(2, $allData);
+    }
 }

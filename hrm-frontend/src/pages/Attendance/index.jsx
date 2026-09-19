@@ -6,7 +6,7 @@ const Attendance = () => {
   const { user } = useAuthContext();
   const [todayData, setTodayData] = useState(null);
   const [historyLogs, setHistoryLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
@@ -47,12 +47,16 @@ const Attendance = () => {
   }, []);
 
   const fetchHistory = useCallback(async (page = 1) => {
-    setLoading(true);
     try {
       const params = { page };
       if (filters.date_from) params.date_from = filters.date_from;
       if (filters.date_to) params.date_to = filters.date_to;
       if (filters.status) params.status = filters.status;
+      if (activeTab === 'mine') {
+        params.scope = 'mine';
+      } else {
+        params.scope = 'all';
+      }
 
       const data = await attendanceService.getAttendanceList(params);
       setHistoryLogs(data.data || []);
@@ -63,15 +67,16 @@ const Attendance = () => {
       });
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to fetch attendance history.' });
-    } finally {
-      setLoading(false);
     }
-  }, [filters]);
+  }, [filters, activeTab]);
 
   useEffect(() => {
     fetchTodayState();
+  }, [fetchTodayState]);
+
+  useEffect(() => {
     fetchHistory(1);
-  }, [fetchTodayState, fetchHistory]);
+  }, [fetchHistory]);
 
   const getMetadata = async () => {
     return new Promise((resolve) => {

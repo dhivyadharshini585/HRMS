@@ -24,7 +24,27 @@ class AttendanceController extends Controller
         $query = Attendance::with(['employee:id,first_name,last_name,employee_code,department_id,designation_id']);
 
         // Scope resolution
-        if ($user->hasAnyRole(['Super Admin', 'HR Admin', 'HR Executive', 'Finance/Payroll Admin'])) {
+        if ($request->input('scope') === 'mine' || $request->boolean('user_only') || $request->boolean('mine')) {
+            $emp = $user->employee;
+            if (!$emp) {
+                return response()->json([
+                    'current_page' => 1,
+                    'data' => [],
+                    'first_page_url' => null,
+                    'from' => null,
+                    'last_page' => 1,
+                    'last_page_url' => null,
+                    'links' => [],
+                    'next_page_url' => null,
+                    'path' => $request->url(),
+                    'per_page' => 15,
+                    'prev_page_url' => null,
+                    'to' => null,
+                    'total' => 0,
+                ]);
+            }
+            $query->where('employee_id', $emp->id);
+        } elseif ($user->hasAnyRole(['Super Admin', 'HR Admin', 'HR Executive', 'Finance/Payroll Admin'])) {
             // Full visibility - optional filters
             if ($request->filled('employee_id')) {
                 $query->where('employee_id', $request->input('employee_id'));
