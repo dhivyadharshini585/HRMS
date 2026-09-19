@@ -49,19 +49,30 @@ class LeaveBalanceController extends Controller
 
         // Ensure balances exist for all active leave types for this year
         $activeTypes = LeaveType::where('is_active', true)->get();
+        $existingBalances = LeaveBalance::where('employee_id', $employee->id)
+            ->where('year', $year)
+            ->pluck('leave_type_id')
+            ->toArray();
+
+        $newBalances = [];
+        $now = now();
         foreach ($activeTypes as $type) {
-            LeaveBalance::firstOrCreate(
-                [
+            if (!in_array($type->id, $existingBalances)) {
+                $newBalances[] = [
                     'employee_id' => $employee->id,
                     'leave_type_id' => $type->id,
                     'year' => $year,
-                ],
-                [
                     'allocated_days' => $type->default_annual_allocation,
                     'used_days' => 0,
                     'remaining_days' => $type->default_annual_allocation,
-                ]
-            );
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+
+        if (!empty($newBalances)) {
+            LeaveBalance::insert($newBalances);
         }
 
         $balances = LeaveBalance::where('employee_id', $employee->id)
