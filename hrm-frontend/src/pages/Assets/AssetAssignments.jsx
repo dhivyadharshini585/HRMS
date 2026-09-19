@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { assetService } from '../../services/assetService';
 import { useAuthContext } from '../../context/AuthContext';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function AssetAssignments({ refreshKey, onRefresh }) {
   const { hasPermission, hasRole } = useAuthContext();
@@ -131,7 +132,7 @@ export default function AssetAssignments({ refreshKey, onRefresh }) {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '4px' }}>Condition at Return *</label>
-                <select
+                <CustomSelect
                   required
                   className="filter-select"
                   style={{ width: '100%' }}
@@ -142,7 +143,7 @@ export default function AssetAssignments({ refreshKey, onRefresh }) {
                   <option value="Good">Good</option>
                   <option value="Fair">Fair</option>
                   <option value="Damaged">Damaged</option>
-                </select>
+                </CustomSelect>
               </div>
 
               <div>

@@ -248,7 +248,7 @@ const OnboardingDetails = () => {
           <span style={{ fontWeight: '600' }}>{onboarding.progress_percentage}%</span>
         </div>
         <div style={{ width: '100%', backgroundColor: '#e2e8f0', borderRadius: '8px', height: '12px', overflow: 'hidden' }}>
-          <div style={{ width: `${onboarding.progress_percentage}%`, backgroundColor: onboarding.progress_percentage === 100 ? '#10b981' : '#3b82f6', height: '100%', transition: 'width 0.3s ease' }}></div>
+          <div style={{ width: `${onboarding.progress_percentage}%`, backgroundColor: onboarding.progress_percentage === 100 ? '#10b981' : '#075E4B', height: '100%', transition: 'width 0.3s ease' }}></div>
         </div>
       </div>
 

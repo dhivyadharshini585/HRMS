@@ -187,7 +187,7 @@ export default function NotificationDropdown() {
                 <span
                   style={{
                     background: 'var(--primary-light, #e0e7ff)',
-                    color: 'var(--primary-color, #4f46e5)',
+                    color: 'var(--primary-color, #064E3B)',
                     fontSize: '0.72rem',
                     fontWeight: 600,
                     padding: '0.15rem 0.5rem',
@@ -205,7 +205,7 @@ export default function NotificationDropdown() {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: 'var(--primary-color, #4f46e5)',
+                  color: 'var(--primary-color, #064E3B)',
                   fontSize: '0.75rem',
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -275,7 +275,7 @@ export default function NotificationDropdown() {
                           width: '8px',
                           height: '8px',
                           borderRadius: '50%',
-                          background: isUnread ? 'var(--primary-color, #4f46e5)' : 'transparent',
+                          background: isUnread ? 'var(--primary-color, #064E3B)' : 'transparent',
                         }}
                       />
                     </div>

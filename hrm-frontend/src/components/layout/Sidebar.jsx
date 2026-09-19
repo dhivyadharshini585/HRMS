@@ -52,7 +52,14 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
           </div>
-          <span className="nav-link-text">HRMS</span>
+          <div className="nav-link-text" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <span>HRMS</span>
+            <span style={{ fontSize: '0.65rem', opacity: 0.7, fontWeight: 500, letterSpacing: '0.05em' }}>ENTERPRISE HUB</span>
+          </div>
+        </div>
+        
+        <div style={{ padding: '1rem 1rem 0.5rem', fontSize: '0.65rem', fontWeight: 600, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.05em' }} className="nav-link-text">
+          PLATFORM NAVIGATION
         </div>
         
         <nav className="sidebar-nav">

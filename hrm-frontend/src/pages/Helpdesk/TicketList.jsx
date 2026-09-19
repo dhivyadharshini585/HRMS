@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { helpdeskService } from '../../services/helpdeskService';
 import { IconSearch, IconPlus } from '../../components/common/Icons';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function TicketList() {
   const [tickets, setTickets] = useState([]);
@@ -196,7 +197,7 @@ export default function TicketList() {
                   </td>
                   <td>{ticket.assignee ? ticket.assignee.name : (ticket.assigned_to_name || 'Unassigned')}</td>
                   <td>
-                    <select
+                    <CustomSelect
                       className="filter-select"
                       style={{ padding: '0.25rem 2rem 0.25rem 0.5rem', fontSize: '0.875rem' }}
                       value={ticket.status}
@@ -205,7 +206,7 @@ export default function TicketList() {
                       {tabs.map(statusOption => (
                         <option key={statusOption} value={statusOption}>{statusOption}</option>
                       ))}
-                    </select>
+                    </CustomSelect>
                   </td>
                 </tr>
               ))}
@@ -241,7 +242,7 @@ export default function TicketList() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '4px' }}>Category</label>
-                  <select
+                  <CustomSelect
                     className="filter-select"
                     style={{ width: '100%' }}
                     value={ticketForm.category}
@@ -253,11 +254,11 @@ export default function TicketList() {
                     <option value="Network">Network</option>
                     <option value="Access">Access</option>
                     <option value="Other">Other</option>
-                  </select>
+                  </CustomSelect>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '4px' }}>Priority</label>
-                  <select
+                  <CustomSelect
                     className="filter-select"
                     style={{ width: '100%' }}
                     value={ticketForm.priority}
@@ -267,7 +268,7 @@ export default function TicketList() {
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
                     <option value="Critical">Critical</option>
-                  </select>
+                  </CustomSelect>
                 </div>
               </div>
 

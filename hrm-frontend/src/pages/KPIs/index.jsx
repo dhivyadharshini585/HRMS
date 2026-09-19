@@ -3,6 +3,7 @@ import api from '../../services/api';
 import kpiService from '../../services/kpiService';
 import { useAuthContext } from '../../context/AuthContext';
 import '../../styles/common.css';
+import CustomSelect from '../../components/common/CustomSelect';
 
 function KPIs() {
   const { user, hasPermission, hasAnyRole } = useAuthContext();
@@ -294,8 +295,8 @@ function KPIs() {
           <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#16a34a', marginTop: '0.25rem' }}>{completedKpis}</div>
         </div>
         <div className="detail-card" style={{ padding: '1rem', marginBottom: 0 }}>
-          <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#3b82f6', fontWeight: 600 }}>In Progress</span>
-          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#3b82f6', marginTop: '0.25rem' }}>{inProgressKpis}</div>
+          <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#075E4B', fontWeight: 600 }}>In Progress</span>
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#075E4B', marginTop: '0.25rem' }}>{inProgressKpis}</div>
         </div>
         <div className="detail-card" style={{ padding: '1rem', marginBottom: 0 }}>
           <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--primary-color)', fontWeight: 600 }}>Avg Completion</span>
@@ -318,34 +319,34 @@ function KPIs() {
         {employees.length > 0 && (
           <div className="filter-group">
             <label className="filter-label">Employee</label>
-            <select className="filter-select" value={selectedEmployee} onChange={(e) => setSelectedEmployee(e.target.value)}>
+            <CustomSelect className="filter-select" value={selectedEmployee} onChange={(e) => setSelectedEmployee(e.target.value)}>
               <option value="">All Employees</option>
               {employees.map(emp => (
                 <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
         )}
         {cycles.length > 0 && (
           <div className="filter-group">
             <label className="filter-label">Performance Cycle</label>
-            <select className="filter-select" value={selectedCycle} onChange={(e) => setSelectedCycle(e.target.value)}>
+            <CustomSelect className="filter-select" value={selectedCycle} onChange={(e) => setSelectedCycle(e.target.value)}>
               <option value="">All Cycles</option>
               {cycles.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
         )}
         <div className="filter-group">
           <label className="filter-label">Status</label>
-          <select className="filter-select" value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
+          <CustomSelect className="filter-select" value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
             <option value="">All Statuses</option>
             <option value="pending">Pending</option>
             <option value="in_progress">In Progress</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
-          </select>
+          </CustomSelect>
         </div>
       </div>
 
@@ -501,7 +502,7 @@ function KPIs() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                       <div className="filter-group">
                         <label className="filter-label">Assigned Employee *</label>
-                        <select
+                        <CustomSelect
                           name="employee_id"
                           className="form-control"
                           value={formData.employee_id}
@@ -512,11 +513,11 @@ function KPIs() {
                           {employees.map(emp => (
                             <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name}</option>
                           ))}
-                        </select>
+                        </CustomSelect>
                       </div>
                       <div className="filter-group">
                         <label className="filter-label">Performance Cycle *</label>
-                        <select
+                        <CustomSelect
                           name="cycle_id"
                           className="form-control"
                           value={formData.cycle_id}
@@ -527,7 +528,7 @@ function KPIs() {
                           {cycles.map(c => (
                             <option key={c.id} value={c.id}>{c.name}</option>
                           ))}
-                        </select>
+                        </CustomSelect>
                       </div>
                     </div>
                   )}
@@ -591,7 +592,7 @@ function KPIs() {
 
                     <div className="filter-group">
                       <label className="filter-label">Status *</label>
-                      <select
+                      <CustomSelect
                         name="status"
                         className="form-control"
                         value={formData.status}
@@ -602,7 +603,7 @@ function KPIs() {
                         <option value="in_progress">In Progress</option>
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
-                      </select>
+                      </CustomSelect>
                     </div>
                   </div>
                 </div>

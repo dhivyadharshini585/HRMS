@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import '../../styles/common.css';
+import CustomSelect from '../../components/common/CustomSelect';
 
 function Goals() {
   const [goals, setGoals] = useState([]);
@@ -330,7 +331,7 @@ function Goals() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                     <div className="filter-group">
                       <label className="filter-label">Employee *</label>
-                      <select
+                      <CustomSelect
                         name="employee_id"
                         className="form-control"
                         value={formData.employee_id}
@@ -341,11 +342,11 @@ function Goals() {
                         {employees.map(emp => (
                           <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name}</option>
                         ))}
-                      </select>
+                      </CustomSelect>
                     </div>
                     <div className="filter-group">
                       <label className="filter-label">Performance Cycle *</label>
-                      <select
+                      <CustomSelect
                         name="cycle_id"
                         className="form-control"
                         value={formData.cycle_id}
@@ -356,7 +357,7 @@ function Goals() {
                         {cycles.map(cycle => (
                           <option key={cycle.id} value={cycle.id}>{cycle.name}</option>
                         ))}
-                      </select>
+                      </CustomSelect>
                     </div>
                   </div>
                 )}
@@ -420,7 +421,7 @@ function Goals() {
                   
                   <div className="filter-group">
                     <label className="filter-label">Status *</label>
-                    <select
+                    <CustomSelect
                       name="status"
                       className="form-control"
                       value={formData.status}
@@ -431,7 +432,7 @@ function Goals() {
                       <option value="in_progress">In Progress</option>
                       <option value="completed">Completed</option>
                       <option value="cancelled">Cancelled</option>
-                    </select>
+                    </CustomSelect>
                   </div>
                 </div>
               </div>

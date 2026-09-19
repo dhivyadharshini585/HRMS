@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import '../../styles/common.css';
+import CustomSelect from '../../components/common/CustomSelect';
 
 function Performance() {
   const [cycles, setCycles] = useState([]);
@@ -246,7 +247,7 @@ function Performance() {
                 
                 <div className="filter-group" style={{ marginBottom: '1rem' }}>
                   <label className="filter-label">Status *</label>
-                  <select
+                  <CustomSelect
                     name="status"
                     className="form-control"
                     value={formData.status}
@@ -256,7 +257,7 @@ function Performance() {
                     <option value="active">Active</option>
                     <option value="completed">Completed</option>
                     <option value="planned">Planned</option>
-                  </select>
+                  </CustomSelect>
                 </div>
               </div>
               

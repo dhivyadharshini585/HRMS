@@ -3,6 +3,7 @@ import candidateService from '../../services/candidateService';
 import jobOpeningService from '../../services/jobOpeningService';
 import { aiService } from '../../services/aiService';
 import { useAuthContext } from '../../context/AuthContext';
+import CustomSelect from '../../components/common/CustomSelect';
 
 const STATUS_LIST = ['New', 'Screening', 'Shortlisted', 'Rejected', 'Hired'];
 const SOURCE_LIST = ['LinkedIn', 'Referral', 'Job Portal', 'Career Page', 'Agency', 'Other'];
@@ -590,7 +591,7 @@ const Candidates = () => {
 
       {/* Stats Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div className="card" style={{ padding: '1.25rem', borderRadius: '8px', borderLeft: '4px solid #3b82f6' }}>
+        <div className="card" style={{ padding: '1.25rem', borderRadius: '8px', borderLeft: '4px solid #075E4B' }}>
           <div style={{ fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Candidates</div>
           <div style={{ fontSize: '1.85rem', fontWeight: 700, marginTop: '0.25rem', color: '#0f172a' }}>{totalCount}</div>
         </div>
@@ -627,7 +628,7 @@ const Candidates = () => {
             />
           </div>
           <div>
-            <select
+            <CustomSelect
               id="candidate-status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -638,10 +639,10 @@ const Candidates = () => {
               {STATUS_LIST.map(st => (
                 <option key={st} value={st}>{st}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div>
-            <select
+            <CustomSelect
               id="candidate-job-filter"
               value={jobFilter}
               onChange={(e) => setJobFilter(e.target.value)}
@@ -652,10 +653,10 @@ const Candidates = () => {
               {jobOpenings.map(j => (
                 <option key={j.id} value={j.id}>{j.title} ({j.job_code})</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div>
-            <select
+            <CustomSelect
               id="candidate-source-filter"
               value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value)}
@@ -666,7 +667,7 @@ const Candidates = () => {
               {SOURCE_LIST.map(src => (
                 <option key={src} value={src}>{src}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div>
             <button
@@ -1006,7 +1007,7 @@ const Candidates = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Applied Job Opening <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     name="job_opening_id"
                     required
                     value={formData.job_opening_id}
@@ -1018,7 +1019,7 @@ const Candidates = () => {
                     {jobOpenings.map(j => (
                       <option key={j.id} value={j.id}>{j.title} ({j.job_code})</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   {formErrors.job_opening_id && <div style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.25rem' }}>{formErrors.job_opening_id}</div>}
                 </div>
 
@@ -1027,7 +1028,7 @@ const Candidates = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Candidate Status <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     name="status"
                     required
                     value={formData.status}
@@ -1038,7 +1039,7 @@ const Candidates = () => {
                     {STATUS_LIST.map(st => (
                       <option key={st} value={st}>{st}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   {formErrors.status && <div style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.25rem' }}>{formErrors.status}</div>}
                 </div>
 
@@ -1102,7 +1103,7 @@ const Candidates = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Candidate Source
                   </label>
-                  <select
+                  <CustomSelect
                     name="source"
                     value={formData.source}
                     onChange={handleFormChange}
@@ -1112,7 +1113,7 @@ const Candidates = () => {
                     {SOURCE_LIST.map(src => (
                       <option key={src} value={src}>{src}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                 </div>
 
                 {/* Current Company */}
@@ -1184,7 +1185,7 @@ const Candidates = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Gender
                   </label>
-                  <select
+                  <CustomSelect
                     name="gender"
                     value={formData.gender}
                     onChange={handleFormChange}
@@ -1195,7 +1196,7 @@ const Candidates = () => {
                     {GENDER_LIST.map(g => (
                       <option key={g} value={g}>{g}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                 </div>
 
                 {/* Date of Birth */}
@@ -1827,7 +1828,7 @@ const Candidates = () => {
                               gap: '0.75rem',
                               padding: '0.6rem 0.75rem',
                               background: '#fff',
-                              border: selectedFieldsToApply[fieldName] ? '1px solid #3b82f6' : '1px solid #e2e8f0',
+                              border: selectedFieldsToApply[fieldName] ? '1px solid #075E4B' : '1px solid #e2e8f0',
                               borderRadius: '6px',
                               cursor: 'pointer',
                             }}

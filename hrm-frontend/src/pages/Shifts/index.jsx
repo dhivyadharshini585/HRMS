@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import shiftService from '../../services/shiftService';
 import { getEmployees } from '../../services/employeeService';
 import { useAuthContext } from '../../context/AuthContext';
+import CustomSelect from '../../components/common/CustomSelect';
 
 const Shifts = () => {
   const { user } = useAuthContext();
@@ -407,7 +408,7 @@ const Shifts = () => {
             <label style={{ fontWeight: 500, fontSize: '0.875rem', whiteSpace: 'nowrap' }}>
               Select Employee:
             </label>
-            <select
+            <CustomSelect
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
               style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', minWidth: '250px' }}
@@ -417,7 +418,7 @@ const Shifts = () => {
                   {emp.employee_code} — {emp.first_name} {emp.last_name}
                 </option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
 
           {/* Rotations List */}
@@ -661,7 +662,7 @@ const Shifts = () => {
                 <label className="form-label" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>
                   Employee <span style={{ color: '#ef4444' }}>*</span>
                 </label>
-                <select
+                <CustomSelect
                   required
                   value={rotationFormData.employee_id}
                   onChange={(e) => setRotationFormData({ ...rotationFormData, employee_id: e.target.value })}
@@ -672,14 +673,14 @@ const Shifts = () => {
                       {emp.employee_code} — {emp.first_name} {emp.last_name}
                     </option>
                   ))}
-                </select>
+                </CustomSelect>
               </div>
 
               <div className="form-group">
                 <label className="form-label" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>
                   Shift Template <span style={{ color: '#ef4444' }}>*</span>
                 </label>
-                <select
+                <CustomSelect
                   required
                   value={rotationFormData.shift_id}
                   onChange={(e) => setRotationFormData({ ...rotationFormData, shift_id: e.target.value })}
@@ -690,7 +691,7 @@ const Shifts = () => {
                       {s.name} ({formatTime(s.start_time)} - {formatTime(s.end_time)})
                     </option>
                   ))}
-                </select>
+                </CustomSelect>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

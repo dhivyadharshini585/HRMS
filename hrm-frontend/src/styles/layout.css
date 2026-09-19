@@ -7,8 +7,8 @@
 
 .app-sidebar {
   width: var(--sidebar-width);
-  background-color: var(--bg-surface);
-  border-right: 1px solid var(--border-color);
+  background-color: var(--primary-dark);
+  border-right: none;
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease;
@@ -49,10 +49,10 @@
   display: flex;
   align-items: center;
   padding: 0 var(--space-4);
-  font-weight: 600;
-  font-size: 1.25rem;
-  color: var(--primary-color);
-  border-bottom: 1px solid var(--border-color);
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #FFFFFF;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   white-space: nowrap;
   overflow: hidden;
 }
@@ -68,7 +68,7 @@
   padding: var(--space-4) var(--space-3);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 0.15rem;
 }
 
 .nav-link {
@@ -76,20 +76,23 @@
   align-items: center;
   padding: var(--space-3);
   border-radius: var(--radius-md);
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.7);
   transition: all 0.2s;
   white-space: nowrap;
   overflow: hidden;
+  font-weight: 500;
+  font-size: 0.875rem;
 }
 
 .nav-link:hover {
-  background-color: var(--bg-surface-hover);
-  color: var(--text-primary);
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #FFFFFF;
 }
 
 .nav-link.active {
-  background-color: var(--primary-color);
-  color: white;
+  background-color: var(--success-bg);
+  color: var(--primary-dark);
+  border-radius: var(--radius-md);
 }
 
 .nav-link-icon {
@@ -99,6 +102,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  color: inherit;
 }
 
 .nav-link-text {
@@ -114,7 +118,7 @@
 
 .sidebar-footer {
   padding: var(--space-4) var(--space-3);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .collapse-btn {
@@ -124,12 +128,15 @@
   width: 100%;
   padding: var(--space-3);
   border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  background-color: var(--bg-surface-hover);
+  color: rgba(255, 255, 255, 0.7);
+  background-color: transparent;
+  transition: background-color 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .collapse-btn:hover {
-  background-color: var(--border-color);
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
 }
 
 /* Header Internals */

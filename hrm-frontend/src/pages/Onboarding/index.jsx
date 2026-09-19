@@ -4,6 +4,7 @@ import { ROUTES } from '../../constants/routes';
 import { getOnboardings, startOnboarding } from '../../services/onboardingService';
 import { getOfferLetters } from '../../services/offerLetterService';
 import { useAuthContext } from '../../context/AuthContext';
+import CustomSelect from '../../components/common/CustomSelect';
 
 const OnboardingList = () => {
   const navigate = useNavigate();
@@ -181,7 +182,7 @@ const OnboardingList = () => {
           />
         </div>
 
-        <select
+        <CustomSelect
           className="filter-select"
           style={{ width: 'auto', minWidth: '160px' }}
           value={statusFilter}
@@ -195,7 +196,7 @@ const OnboardingList = () => {
           <option value="In Progress">In Progress</option>
           <option value="Completed">Completed</option>
           <option value="Cancelled">Cancelled</option>
-        </select>
+        </CustomSelect>
       </div>
 
       <div className="tab-navigation">
@@ -279,7 +280,7 @@ const OnboardingList = () => {
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '100px', backgroundColor: '#e2e8f0', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
-                           <div style={{ width: `${record.progress_percentage}%`, backgroundColor: record.progress_percentage === 100 ? '#10b981' : '#3b82f6', height: '100%' }}></div>
+                           <div style={{ width: `${record.progress_percentage}%`, backgroundColor: record.progress_percentage === 100 ? '#10b981' : '#075E4B', height: '100%' }}></div>
                         </div>
                         <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{record.progress_percentage}%</span>
                       </div>
@@ -357,7 +358,7 @@ const OnboardingList = () => {
                   ) : acceptedOffers.length === 0 ? (
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>No accepted offer letters available for onboarding.</p>
                   ) : (
-                    <select
+                    <CustomSelect
                       className="filter-select"
                       style={{ width: '100%', padding: '0.625rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-surface)' }}
                       value={selectedOfferId}
@@ -375,7 +376,7 @@ const OnboardingList = () => {
                           </option>
                         );
                       })}
-                    </select>
+                    </CustomSelect>
                   )}
                 </div>
 

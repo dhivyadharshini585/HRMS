@@ -4,6 +4,7 @@ import candidateService from '../../services/candidateService';
 import jobOpeningService from '../../services/jobOpeningService';
 import departmentService from '../../services/departmentService';
 import { useAuthContext } from '../../context/AuthContext';
+import CustomSelect from '../../components/common/CustomSelect';
 
 const OFFER_STATUSES = ['Draft', 'Sent', 'Accepted', 'Rejected', 'Withdrawn', 'Expired'];
 const EMPLOYMENT_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship'];
@@ -337,7 +338,7 @@ const OfferLetters = () => {
 
       {/* SUMMARY CARDS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div className="detail-card" style={{ marginBottom: 0, padding: '1.25rem', borderLeft: '4px solid #3b82f6' }}>
+        <div className="detail-card" style={{ marginBottom: 0, padding: '1.25rem', borderLeft: '4px solid #075E4B' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Offers</div>
           <div style={{ fontSize: '1.85rem', fontWeight: 700, marginTop: '0.25rem', color: 'var(--text-primary)' }}>{stats.Total}</div>
         </div>
@@ -377,10 +378,10 @@ const OfferLetters = () => {
         </div>
         <div className="filter-group">
           <label className="filter-label">Status</label>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="filter-select">
+          <CustomSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="filter-select">
             <option value="">All Statuses</option>
             {OFFER_STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
-          </select>
+          </CustomSelect>
         </div>
         <div className="filter-group">
           <label className="filter-label">Offer Date From</label>
@@ -552,19 +553,19 @@ const OfferLetters = () => {
                     {activeOffer ? (
                       <input type="text" disabled value={`${candidateName(activeOffer.candidate)} (${activeOffer.candidate?.candidate_code || ''})`} className="form-control" style={{ backgroundColor: 'var(--bg-surface-hover)' }} />
                     ) : (
-                      <select value={formData.candidate_id} onChange={handleCandidateChange} required className="form-control">
+                      <CustomSelect value={formData.candidate_id} onChange={handleCandidateChange} required className="form-control">
                         <option value="">Select a Hired candidate...</option>
                         {hiredCandidates.map(c => <option key={c.id} value={c.id}>{c.first_name} {c.last_name} — {c.job_opening?.title || 'N/A'}</option>)}
-                      </select>
+                      </CustomSelect>
                     )}
                     {formErrors.candidate_id && <span style={{ color: 'red', fontSize: '0.75rem' }}>{formErrors.candidate_id[0]}</span>}
                   </div>
                   <div className="filter-group">
                     <label className="filter-label">Job Opening *</label>
-                    <select value={formData.job_opening_id} disabled className="form-control" style={{ backgroundColor: 'var(--bg-surface-hover)' }}>
+                    <CustomSelect value={formData.job_opening_id} disabled className="form-control" style={{ backgroundColor: 'var(--bg-surface-hover)' }}>
                       <option value="">Auto-bound from candidate</option>
                       {jobOpenings.map(j => <option key={j.id} value={j.id}>{j.title} ({j.job_code})</option>)}
-                    </select>
+                    </CustomSelect>
                   </div>
                   <div className="filter-group">
                     <label className="filter-label">Designation *</label>
@@ -573,10 +574,10 @@ const OfferLetters = () => {
                   </div>
                   <div className="filter-group">
                     <label className="filter-label">Department</label>
-                    <select value={formData.department_id} disabled className="form-control" style={{ backgroundColor: 'var(--bg-surface-hover)' }}>
+                    <CustomSelect value={formData.department_id} disabled className="form-control" style={{ backgroundColor: 'var(--bg-surface-hover)' }}>
                       <option value="">Auto-bound</option>
                       {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
+                    </CustomSelect>
                   </div>
                 </div>
 
@@ -584,9 +585,9 @@ const OfferLetters = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                   <div className="filter-group">
                     <label className="filter-label">Employment Type *</label>
-                    <select value={formData.employment_type} onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })} className="form-control">
+                    <CustomSelect value={formData.employment_type} onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })} className="form-control">
                       {EMPLOYMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                    </CustomSelect>
                   </div>
                   <div className="filter-group">
                     <label className="filter-label">Work Location</label>
@@ -621,15 +622,15 @@ const OfferLetters = () => {
                   </div>
                   <div className="filter-group">
                     <label className="filter-label">Currency *</label>
-                    <select value={formData.salary_currency} onChange={(e) => setFormData({ ...formData, salary_currency: e.target.value })} className="form-control">
+                    <CustomSelect value={formData.salary_currency} onChange={(e) => setFormData({ ...formData, salary_currency: e.target.value })} className="form-control">
                       {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    </CustomSelect>
                   </div>
                   <div className="filter-group">
                     <label className="filter-label">Frequency *</label>
-                    <select value={formData.salary_frequency} onChange={(e) => setFormData({ ...formData, salary_frequency: e.target.value })} className="form-control">
+                    <CustomSelect value={formData.salary_frequency} onChange={(e) => setFormData({ ...formData, salary_frequency: e.target.value })} className="form-control">
                       {SALARY_FREQUENCIES.map(f => <option key={f} value={f}>{f}</option>)}
-                    </select>
+                    </CustomSelect>
                   </div>
                 </div>
 

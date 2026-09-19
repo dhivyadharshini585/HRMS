@@ -3,6 +3,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getPayrollSummary, getDepartmentPayroll, getDeductionReport, getEmployeePayrollReport } from '../../services/payrollService';
 import { IconUsers, IconCalendar, IconBarChart, IconCheck, IconDownload, IconFileText, IconAlertCircle } from '../../components/common/Icons';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function PayrollReports() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -287,7 +288,7 @@ export default function PayrollReports() {
       <div className="filters-bar" style={{ marginBottom: 'var(--space-6)' }}>
         <div className="filter-group">
           <label className="filter-label">Report Type</label>
-          <select
+          <CustomSelect
             value={reportType}
             onChange={(e) => setReportType(e.target.value)}
             className="filter-select"
@@ -296,12 +297,12 @@ export default function PayrollReports() {
             {reportTypes.map((rt) => (
               <option key={rt.value} value={rt.value}>{rt.label}</option>
             ))}
-          </select>
+          </CustomSelect>
         </div>
 
         <div className="filter-group">
           <label className="filter-label">Month</label>
-          <select
+          <CustomSelect
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
             className="filter-select"
@@ -310,7 +311,7 @@ export default function PayrollReports() {
             {months.map((m) => (
               <option key={m.value} value={m.value}>{m.label}</option>
             ))}
-          </select>
+          </CustomSelect>
         </div>
 
         <div className="filter-group">
@@ -339,7 +340,7 @@ export default function PayrollReports() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
         <div className="detail-card" style={{ display: 'flex', alignItems: 'center', marginBottom: 0, padding: 'var(--space-4)' }}>
-          <div style={{ backgroundColor: '#e0e7ff', padding: 'var(--space-3)', borderRadius: '50%', marginRight: 'var(--space-4)', color: '#4f46e5', display: 'flex' }}>
+          <div style={{ backgroundColor: '#e0e7ff', padding: 'var(--space-3)', borderRadius: '50%', marginRight: 'var(--space-4)', color: '#064E3B', display: 'flex' }}>
             <IconUsers width="24" height="24" />
           </div>
           <div>
@@ -540,7 +541,7 @@ export default function PayrollReports() {
                       <div key={idx} className="detail-card" style={{ marginBottom: 0, padding: 0, display: 'flex', flexDirection: 'column' }}>
                         <div style={{ padding: 'var(--space-4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)' }}>
                           <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#e0e7ff', color: '#064E3B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
                               {emp.employee.charAt(0)}
                             </div>
                             <div style={{ marginLeft: 'var(--space-3)' }}>

@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import leaveService from '../../services/leaveService';
 import { getEmployees } from '../../services/employeeService';
 import { useAuthContext } from '../../context/AuthContext';
+import CustomSelect from '../../components/common/CustomSelect';
 
 const Leave = () => {
   const { user } = useAuthContext();
@@ -24,6 +25,19 @@ const Leave = () => {
 
   // Apply Leave Modal State
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+  const [isLeaveTypeDropdownOpen, setIsLeaveTypeDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsLeaveTypeDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => { document.removeEventListener("mousedown", handleClickOutside); };
+  }, []);
+
   const [applyFormData, setApplyFormData] = useState({
     leave_type_id: '',
     from_date: '',
@@ -385,7 +399,7 @@ const Leave = () => {
           <div className="filters-bar" style={{ marginBottom: 0 }}>
             <div className="filter-group">
               <label className="filter-label">Filter Status</label>
-              <select
+              <CustomSelect
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="filter-select"
@@ -396,7 +410,7 @@ const Leave = () => {
                 <option value="Approved">Approved</option>
                 <option value="Rejected">Rejected</option>
                 <option value="Cancelled">Cancelled</option>
-              </select>
+              </CustomSelect>
             </div>
           </div>
 
@@ -566,18 +580,81 @@ const Leave = () => {
                   <label className="form-label">
                     Leave Type <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
-                    required
-                    value={applyFormData.leave_type_id}
-                    onChange={(e) => setApplyFormData({ ...applyFormData, leave_type_id: e.target.value })}
-                    className="form-control"
-                  >
-                    {leaveTypes.filter(t => t.is_active).map(t => (
-                      <option key={t.id} value={t.id}>
-                        {t.name} {t.is_unpaid ? '(Unpaid)' : ''}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Custom Leave Type Dropdown */}
+                  <div className="custom-dropdown" ref={dropdownRef} style={{ position: 'relative' }}>
+                    <div 
+                      className="form-control" 
+                      style={{ 
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', 
+                        border: isLeaveTypeDropdownOpen ? '1px solid #075E4B' : '1px solid #E2E8E5',
+                        boxShadow: isLeaveTypeDropdownOpen ? '0 0 0 2px rgba(7, 94, 75, 0.1)' : 'none',
+                        backgroundColor: '#FFFFFF', color: '#064E3B', padding: '0.5rem 0.75rem'
+                      }}
+                      onClick={() => setIsLeaveTypeDropdownOpen(!isLeaveTypeDropdownOpen)}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setIsLeaveTypeDropdownOpen(!isLeaveTypeDropdownOpen);
+                        } else if (e.key === 'Escape') {
+                          setIsLeaveTypeDropdownOpen(false);
+                        }
+                      }}
+                    >
+                      <span>
+                        {applyFormData.leave_type_id 
+                          ? (() => {
+                              const sel = leaveTypes.find(t => t.id === Number(applyFormData.leave_type_id));
+                              return sel ? `${sel.name} ${sel.is_unpaid ? '(Unpaid)' : ''}` : 'Select Leave Type';
+                            })()
+                          : 'Select Leave Type'
+                        }
+                      </span>
+                      <span style={{ transform: isLeaveTypeDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+                    </div>
+                    
+                    {isLeaveTypeDropdownOpen && (
+                      <div style={{
+                        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                        backgroundColor: '#FFFFFF', border: '1px solid #E2E8E5', borderRadius: '8px',
+                        marginTop: '4px', boxShadow: '0 4px 12px -1px rgba(0, 0, 0, 0.1)',
+                        maxHeight: '200px', overflowY: 'auto'
+                      }}>
+                        {leaveTypes.filter(t => t.is_active).map(t => (
+                          <div
+                            key={t.id}
+                            style={{
+                              padding: '0.75rem 1rem', cursor: 'pointer',
+                              backgroundColor: Number(applyFormData.leave_type_id) === t.id ? '#DDF7EC' : 'transparent',
+                              color: Number(applyFormData.leave_type_id) === t.id ? '#064E3B' : 'inherit',
+                              fontWeight: Number(applyFormData.leave_type_id) === t.id ? 600 : 400
+                            }}
+                            onMouseEnter={(e) => {
+                              if (Number(applyFormData.leave_type_id) !== t.id) e.currentTarget.style.backgroundColor = '#f1f8f5';
+                            }}
+                            onMouseLeave={(e) => {
+                              if (Number(applyFormData.leave_type_id) !== t.id) e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
+                            onClick={() => {
+                              setApplyFormData({ ...applyFormData, leave_type_id: t.id });
+                              setIsLeaveTypeDropdownOpen(false);
+                            }}
+                          >
+                            {t.name} {t.is_unpaid ? '(Unpaid)' : ''}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Hidden input for HTML5 required validation */}
+                  <input 
+                    type="text" 
+                    required 
+                    value={applyFormData.leave_type_id} 
+                    onChange={() => {}} 
+                    style={{ position: 'absolute', opacity: 0, height: 0, width: 0, pointerEvents: 'none' }} 
+                  />
                   {getSelectedTypeBalance() !== null && (
                     <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 500, marginTop: '0.2rem' }}>
                       Available Balance: {getSelectedTypeBalance()} days
@@ -662,7 +739,7 @@ const Leave = () => {
                   <label className="form-label">
                     Employee <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     required
                     value={adjustFormData.employee_id}
                     onChange={(e) => setAdjustFormData({ ...adjustFormData, employee_id: e.target.value })}
@@ -673,14 +750,14 @@ const Leave = () => {
                         {emp.employee_code} — {emp.first_name} {emp.last_name}
                       </option>
                     ))}
-                  </select>
+                  </CustomSelect>
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">
                     Leave Type <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     required
                     value={adjustFormData.leave_type_id}
                     onChange={(e) => setAdjustFormData({ ...adjustFormData, leave_type_id: e.target.value })}
@@ -689,7 +766,7 @@ const Leave = () => {
                     {leaveTypes.map(t => (
                       <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

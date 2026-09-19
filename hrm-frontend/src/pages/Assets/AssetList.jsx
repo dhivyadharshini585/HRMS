@@ -3,6 +3,7 @@ import { assetService } from '../../services/assetService';
 import { getEmployees } from '../../services/employeeService';
 import { useAuthContext } from '../../context/AuthContext';
 import { IconPlus, IconSearch } from '../../components/common/Icons';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function AssetList({ refreshKey, onRefresh }) {
   const { hasPermission, hasRole } = useAuthContext();
@@ -246,7 +247,7 @@ export default function AssetList({ refreshKey, onRefresh }) {
             style={{ paddingLeft: '32px', width: '100%' }}
           />
         </div>
-        <select className="filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} style={{ width: '160px' }}>
+        <CustomSelect className="filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} style={{ width: '160px' }}>
           <option value="">All Types</option>
           <option value="Laptop">Laptop</option>
           <option value="Desktop">Desktop</option>
@@ -256,14 +257,14 @@ export default function AssetList({ refreshKey, onRefresh }) {
           <option value="Mobile">Mobile</option>
           <option value="ID Card">ID Card</option>
           <option value="Software License">Software License</option>
-        </select>
-        <select className="filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: '160px' }}>
+        </CustomSelect>
+        <CustomSelect className="filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: '160px' }}>
           <option value="">All Statuses</option>
           <option value="Unassigned">Unassigned</option>
           <option value="Assigned">Assigned</option>
           <option value="In Maintenance">In Maintenance</option>
           <option value="Retired">Retired</option>
-        </select>
+        </CustomSelect>
       </div>
 
       <div className="table-container">
@@ -359,7 +360,7 @@ export default function AssetList({ refreshKey, onRefresh }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '4px' }}>Type *</label>
-                  <select
+                  <CustomSelect
                     className="filter-select"
                     style={{ width: '100%' }}
                     value={assetForm.type}
@@ -373,11 +374,11 @@ export default function AssetList({ refreshKey, onRefresh }) {
                     <option value="Mobile">Mobile</option>
                     <option value="ID Card">ID Card</option>
                     <option value="Software License">Software License</option>
-                  </select>
+                  </CustomSelect>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '4px' }}>Condition</label>
-                  <select
+                  <CustomSelect
                     className="filter-select"
                     style={{ width: '100%' }}
                     value={assetForm.condition}
@@ -387,7 +388,7 @@ export default function AssetList({ refreshKey, onRefresh }) {
                     <option value="Good">Good</option>
                     <option value="Fair">Fair</option>
                     <option value="Damaged">Damaged</option>
-                  </select>
+                  </CustomSelect>
                 </div>
               </div>
 
@@ -429,7 +430,7 @@ export default function AssetList({ refreshKey, onRefresh }) {
               {editingAsset && (
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '4px' }}>Status</label>
-                  <select
+                  <CustomSelect
                     className="filter-select"
                     style={{ width: '100%' }}
                     value={assetForm.status}
@@ -439,7 +440,7 @@ export default function AssetList({ refreshKey, onRefresh }) {
                     <option value="Assigned">Assigned</option>
                     <option value="In Maintenance">In Maintenance</option>
                     <option value="Retired">Retired</option>
-                  </select>
+                  </CustomSelect>
                 </div>
               )}
 
@@ -465,7 +466,7 @@ export default function AssetList({ refreshKey, onRefresh }) {
             <form onSubmit={handleAssignSubmit} style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '4px' }}>Employee *</label>
-                <select
+                <CustomSelect
                   required
                   className="filter-select"
                   style={{ width: '100%' }}
@@ -478,7 +479,7 @@ export default function AssetList({ refreshKey, onRefresh }) {
                       {emp.first_name} {emp.last_name} ({emp.employee_id || emp.id})
                     </option>
                   ))}
-                </select>
+                </CustomSelect>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
@@ -495,7 +496,7 @@ export default function AssetList({ refreshKey, onRefresh }) {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '4px' }}>Condition</label>
-                  <select
+                  <CustomSelect
                     className="filter-select"
                     style={{ width: '100%' }}
                     value={assignForm.condition_at_assignment}
@@ -505,7 +506,7 @@ export default function AssetList({ refreshKey, onRefresh }) {
                     <option value="Good">Good</option>
                     <option value="Fair">Fair</option>
                     <option value="Damaged">Damaged</option>
-                  </select>
+                  </CustomSelect>
                 </div>
               </div>
 

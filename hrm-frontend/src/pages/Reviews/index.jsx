@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useAuthContext } from '../../context/AuthContext';
 import '../../styles/common.css';
+import CustomSelect from '../../components/common/CustomSelect';
 
 function Reviews() {
   const { hasPermission } = useAuthContext();
@@ -218,7 +219,7 @@ function Reviews() {
   const renderRatingSelect = (name, label) => (
     <div className="filter-group">
       <label className="filter-label">{label} *</label>
-      <select
+      <CustomSelect
         name={name}
         className="form-control"
         value={formData[name]}
@@ -228,7 +229,7 @@ function Reviews() {
         {[1, 2, 3, 4, 5].map(val => (
           <option key={val} value={val}>{RATING_LABELS[val]}</option>
         ))}
-      </select>
+      </CustomSelect>
     </div>
   );
 
@@ -332,7 +333,7 @@ function Reviews() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
                   <div className="filter-group">
                     <label className="filter-label">Employee *</label>
-                    <select
+                    <CustomSelect
                       name="employee_id"
                       className="form-control"
                       value={formData.employee_id}
@@ -344,11 +345,11 @@ function Reviews() {
                       {employees.map(emp => (
                         <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name}</option>
                       ))}
-                    </select>
+                    </CustomSelect>
                   </div>
                   <div className="filter-group">
                     <label className="filter-label">Performance Cycle *</label>
-                    <select
+                    <CustomSelect
                       name="cycle_id"
                       className="form-control"
                       value={formData.cycle_id}
@@ -360,11 +361,11 @@ function Reviews() {
                       {cycles.map(cycle => (
                         <option key={cycle.id} value={cycle.id}>{cycle.name}</option>
                       ))}
-                    </select>
+                    </CustomSelect>
                   </div>
                   <div className="filter-group">
                     <label className="filter-label">Reviewer *</label>
-                    <select
+                    <CustomSelect
                       name="reviewer_id"
                       className="form-control"
                       value={formData.reviewer_id}
@@ -376,7 +377,7 @@ function Reviews() {
                       {employees.map(emp => (
                         <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name}</option>
                       ))}
-                    </select>
+                    </CustomSelect>
                     <small style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
                       (Backend may auto-assign logged-in user)
                     </small>

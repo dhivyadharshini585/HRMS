@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import reportService from '../../services/reportService';
 import '../../styles/common.css';
+import CustomSelect from '../../components/common/CustomSelect';
 
 const PerformanceReports = () => {
   const [activeTab, setActiveTab] = useState('ratings'); // 'ratings' | 'department' | 'goals' | 'training'
@@ -295,7 +296,7 @@ const PerformanceReports = () => {
           {activeTab !== 'training' && (
             <div>
               <label className="filter-label">Performance Cycle</label>
-              <select
+              <CustomSelect
                 className="form-control"
                 value={selectedCycle}
                 onChange={(e) => setSelectedCycle(e.target.value)}
@@ -304,14 +305,14 @@ const PerformanceReports = () => {
                 {cycles.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
-              </select>
+              </CustomSelect>
             </div>
           )}
 
           {activeTab === 'training' && (
             <div>
               <label className="filter-label">Training Program</label>
-              <select
+              <CustomSelect
                 className="form-control"
                 value={selectedTraining}
                 onChange={(e) => setSelectedTraining(e.target.value)}
@@ -320,13 +321,13 @@ const PerformanceReports = () => {
                 {trainingsList.map((t) => (
                   <option key={t.id} value={t.id}>{t.training_name}</option>
                 ))}
-              </select>
+              </CustomSelect>
             </div>
           )}
 
           <div>
             <label className="filter-label">Department</label>
-            <select
+            <CustomSelect
               className="form-control"
               value={selectedDepartment}
               onChange={(e) => setSelectedDepartment(e.target.value)}
@@ -335,13 +336,13 @@ const PerformanceReports = () => {
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
 
           {activeTab !== 'department' && (
             <div>
               <label className="filter-label">Employee</label>
-              <select
+              <CustomSelect
                 className="form-control"
                 value={selectedEmployee}
                 onChange={(e) => setSelectedEmployee(e.target.value)}
@@ -352,7 +353,7 @@ const PerformanceReports = () => {
                     {emp.first_name} {emp.last_name} ({emp.employee_code})
                   </option>
                 ))}
-              </select>
+              </CustomSelect>
             </div>
           )}
 

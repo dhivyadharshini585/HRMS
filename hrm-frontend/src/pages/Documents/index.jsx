@@ -5,6 +5,7 @@ import { getEmployees } from '../../services/employeeService';
 import { useAuthContext } from '../../context/AuthContext';
 import { CATEGORY_OPTIONS } from '../../constants/documentCategories';
 import DocumentUploadModal from './DocumentUploadModal';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function Documents() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -142,7 +143,7 @@ export default function Documents() {
 
         {isHRorAdmin && (
           <div style={{ minWidth: '220px' }}>
-            <select
+            <CustomSelect
               className="form-control"
               value={selectedEmployeeId}
               onChange={(e) => {
@@ -161,7 +162,7 @@ export default function Documents() {
                   {emp.employee_code} — {emp.first_name} {emp.last_name}
                 </option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
         )}
       </div>

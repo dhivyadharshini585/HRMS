@@ -53,7 +53,7 @@ const HRAssistantChat = () => {
           width: '60px',
           height: '60px',
           borderRadius: '50%',
-          backgroundColor: '#4f46e5',
+          backgroundColor: '#064E3B',
           color: 'white',
           border: 'none',
           boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
@@ -63,9 +63,11 @@ const HRAssistantChat = () => {
           justifyContent: 'center',
           fontSize: '1.5rem',
           zIndex: 9999,
-          transition: 'transform 0.2s',
+          transition: 'transform 0.2s, background-color 0.2s',
           transform: isOpen ? 'scale(0)' : 'scale(1)',
         }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#075E4B'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#064E3B'}
       >
         💬
       </button>
@@ -94,7 +96,7 @@ const HRAssistantChat = () => {
       >
         {/* Header */}
         <div style={{
-          backgroundColor: '#4f46e5',
+          backgroundColor: '#064E3B',
           color: 'white',
           padding: '1rem',
           display: 'flex',
@@ -135,8 +137,8 @@ const HRAssistantChat = () => {
               style={{
                 alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 maxWidth: '85%',
-                backgroundColor: msg.role === 'user' ? '#4f46e5' : '#ffffff',
-                color: msg.role === 'user' ? '#ffffff' : '#1e293b',
+                backgroundColor: msg.role === 'user' ? '#064E3B' : '#ffffff',
+                color: msg.role === 'user' ? '#ffffff' : '#0a4d3a',
                 padding: '0.75rem 1rem',
                 borderRadius: '12px',
                 borderBottomRightRadius: msg.role === 'user' ? '4px' : '12px',
@@ -188,7 +190,7 @@ const HRAssistantChat = () => {
             type="submit"
             disabled={isLoading || !inputValue.trim()}
             style={{
-              backgroundColor: inputValue.trim() && !isLoading ? '#4f46e5' : '#94a3b8',
+              backgroundColor: inputValue.trim() && !isLoading ? '#064E3B' : '#94a3b8',
               color: 'white',
               border: 'none',
               borderRadius: '50%',
@@ -200,6 +202,8 @@ const HRAssistantChat = () => {
               cursor: inputValue.trim() && !isLoading ? 'pointer' : 'not-allowed',
               transition: 'background-color 0.2s'
             }}
+            onMouseEnter={(e) => { if (inputValue.trim() && !isLoading) e.currentTarget.style.backgroundColor = '#075E4B'; }}
+            onMouseLeave={(e) => { if (inputValue.trim() && !isLoading) e.currentTarget.style.backgroundColor = '#064E3B'; }}
           >
             ➤
           </button>

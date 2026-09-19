@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import holidayService from '../../services/holidayService';
 import { useAuthContext } from '../../context/AuthContext';
+import CustomSelect from '../../components/common/CustomSelect';
 
 const Holidays = () => {
   const { user } = useAuthContext();
@@ -326,7 +327,7 @@ const Holidays = () => {
                   <label className="form-label" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>
                     Holiday Type <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     className="form-control"
                     value={formData.holiday_type}
                     onChange={(e) => setFormData({ ...formData, holiday_type: e.target.value })}
@@ -336,7 +337,7 @@ const Holidays = () => {
                     <option value="Company">Company</option>
                     <option value="Regional">Regional</option>
                     <option value="Optional">Optional</option>
-                  </select>
+                  </CustomSelect>
                 </div>
               </div>
 

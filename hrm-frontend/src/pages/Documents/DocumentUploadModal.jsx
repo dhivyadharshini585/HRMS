@@ -3,6 +3,7 @@ import { CATEGORY_OPTIONS, getTypesForCategory } from '../../constants/documentC
 import { uploadDocument } from '../../services/documentService';
 import { getEmployees } from '../../services/employeeService';
 import { useAuthContext } from '../../context/AuthContext';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function DocumentUploadModal({ isOpen, onClose, onSuccess, defaultEmployeeId }) {
   const { user, hasRole } = useAuthContext();
@@ -133,7 +134,7 @@ export default function DocumentUploadModal({ isOpen, onClose, onSuccess, defaul
               <label className="form-label" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>
                 Employee <span style={{ color: '#ef4444' }}>*</span>
               </label>
-              <select
+              <CustomSelect
                 className="form-control"
                 value={selectedEmployeeId}
                 onChange={(e) => setSelectedEmployeeId(e.target.value)}
@@ -146,7 +147,7 @@ export default function DocumentUploadModal({ isOpen, onClose, onSuccess, defaul
                     {emp.employee_code} — {emp.first_name} {emp.last_name}
                   </option>
                 ))}
-              </select>
+              </CustomSelect>
             </div>
           )}
 
@@ -154,7 +155,7 @@ export default function DocumentUploadModal({ isOpen, onClose, onSuccess, defaul
             <label className="form-label" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>
               Document Category <span style={{ color: '#ef4444' }}>*</span>
             </label>
-            <select
+            <CustomSelect
               className="form-control"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -164,14 +165,14 @@ export default function DocumentUploadModal({ isOpen, onClose, onSuccess, defaul
               {CATEGORY_OPTIONS.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
 
           <div className="form-group">
             <label className="form-label" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>
               Document Type <span style={{ color: '#ef4444' }}>*</span>
             </label>
-            <select
+            <CustomSelect
               className="form-control"
               value={type}
               onChange={(e) => setType(e.target.value)}
@@ -181,7 +182,7 @@ export default function DocumentUploadModal({ isOpen, onClose, onSuccess, defaul
               {availableTypes.map(t => (
                 <option key={t} value={t}>{t}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
 
           <div className="form-group">

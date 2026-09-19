@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import auditLogService from '../../services/auditLogService';
+import CustomSelect from '../../components/common/CustomSelect';
 
 const AuditLogs = () => {
   const [logs, setLogs] = useState([]);
@@ -105,7 +106,7 @@ const AuditLogs = () => {
       <div className="filters-bar">
         <div className="filter-group">
           <label className="filter-label">Action Event</label>
-          <select
+          <CustomSelect
             name="action"
             value={filters.action}
             onChange={handleFilterChange}
@@ -125,7 +126,7 @@ const AuditLogs = () => {
             <option value="holiday.created">Holiday Created</option>
             <option value="holiday.updated">Holiday Updated</option>
             <option value="holiday.deleted">Holiday Deleted</option>
-          </select>
+          </CustomSelect>
         </div>
 
         <div className="filter-group">

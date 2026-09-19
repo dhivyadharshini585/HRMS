@@ -4,6 +4,7 @@ import leaveService from '../../services/leaveService';
 import departmentService from '../../services/departmentService';
 import { useAuthContext } from '../../context/AuthContext';
 import { IconDownload, IconFilter } from '../../components/common/Icons';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function LeaveReport() {
   const { user } = useAuthContext();
@@ -266,7 +267,7 @@ export default function LeaveReport() {
 
           <div className="filter-group">
             <label className="filter-label">Status</label>
-            <select
+            <CustomSelect
               value={filters.status}
               onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
               className="filter-select"
@@ -278,12 +279,12 @@ export default function LeaveReport() {
               <option value="Approved">Approved</option>
               <option value="Rejected">Rejected</option>
               <option value="Cancelled">Cancelled</option>
-            </select>
+            </CustomSelect>
           </div>
 
           <div className="filter-group">
             <label className="filter-label">Leave Type</label>
-            <select
+            <CustomSelect
               value={filters.leave_type_id}
               onChange={(e) => setFilters(prev => ({ ...prev, leave_type_id: e.target.value }))}
               className="filter-select"
@@ -293,13 +294,13 @@ export default function LeaveReport() {
               {leaveTypes.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
 
           {canFilterEmployeeOrDept && (
             <div className="filter-group">
               <label className="filter-label">Department</label>
-              <select
+              <CustomSelect
                 value={filters.department_id}
                 onChange={(e) => setFilters(prev => ({ ...prev, department_id: e.target.value }))}
                 className="filter-select"
@@ -309,7 +310,7 @@ export default function LeaveReport() {
                 {departments.map((d) => (
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
-              </select>
+              </CustomSelect>
             </div>
           )}
 

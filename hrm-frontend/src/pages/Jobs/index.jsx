@@ -3,6 +3,7 @@ import jobOpeningService from '../../services/jobOpeningService';
 import departmentService from '../../services/departmentService';
 import designationService from '../../services/designationService';
 import { useAuthContext } from '../../context/AuthContext';
+import CustomSelect from '../../components/common/CustomSelect';
 
 const EMPLOYMENT_TYPES = ['Full Time', 'Part Time', 'Contract', 'Internship'];
 const STATUSES = ['Draft', 'Open', 'Closed'];
@@ -320,7 +321,7 @@ const Jobs = () => {
 
       {/* Stats Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div className="card" style={{ padding: '1.25rem', borderRadius: '8px', borderLeft: '4px solid #3b82f6' }}>
+        <div className="card" style={{ padding: '1.25rem', borderRadius: '8px', borderLeft: '4px solid #075E4B' }}>
           <div style={{ fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Openings</div>
           <div style={{ fontSize: '1.85rem', fontWeight: 700, marginTop: '0.25rem', color: '#0f172a' }}>{totalCount}</div>
         </div>
@@ -353,7 +354,7 @@ const Jobs = () => {
             />
           </div>
           <div>
-            <select
+            <CustomSelect
               id="job-status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -364,10 +365,10 @@ const Jobs = () => {
               {STATUSES.map(st => (
                 <option key={st} value={st}>{st}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div>
-            <select
+            <CustomSelect
               id="job-dept-filter"
               value={deptFilter}
               onChange={(e) => setDeptFilter(e.target.value)}
@@ -378,10 +379,10 @@ const Jobs = () => {
               {departments.map(d => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div>
-            <select
+            <CustomSelect
               id="job-type-filter"
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
@@ -392,7 +393,7 @@ const Jobs = () => {
               {EMPLOYMENT_TYPES.map(t => (
                 <option key={t} value={t}>{t}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div>
             <button
@@ -596,7 +597,7 @@ const Jobs = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Department <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     name="department_id"
                     required
                     value={formData.department_id}
@@ -608,7 +609,7 @@ const Jobs = () => {
                     {departments.map(d => (
                       <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   {formErrors.department_id && <div style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.25rem' }}>{formErrors.department_id}</div>}
                 </div>
 
@@ -617,7 +618,7 @@ const Jobs = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Designation
                   </label>
-                  <select
+                  <CustomSelect
                     name="designation_id"
                     value={formData.designation_id}
                     onChange={handleFormChange}
@@ -628,7 +629,7 @@ const Jobs = () => {
                     {designations.map(ds => (
                       <option key={ds.id} value={ds.id}>{ds.title}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   {formErrors.designation_id && <div style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.25rem' }}>{formErrors.designation_id}</div>}
                 </div>
 
@@ -637,7 +638,7 @@ const Jobs = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Employment Type <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     name="employment_type"
                     required
                     value={formData.employment_type}
@@ -648,7 +649,7 @@ const Jobs = () => {
                     {EMPLOYMENT_TYPES.map(t => (
                       <option key={t} value={t}>{t}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   {formErrors.employment_type && <div style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.25rem' }}>{formErrors.employment_type}</div>}
                 </div>
 
@@ -693,7 +694,7 @@ const Jobs = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Status <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     name="status"
                     required
                     value={formData.status}
@@ -704,7 +705,7 @@ const Jobs = () => {
                     {STATUSES.map(st => (
                       <option key={st} value={st}>{st}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   {formErrors.status && <div style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.25rem' }}>{formErrors.status}</div>}
                 </div>
 

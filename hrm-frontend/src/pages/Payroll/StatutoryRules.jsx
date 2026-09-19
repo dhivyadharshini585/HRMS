@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import '../../styles/common.css';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function StatutoryRules() {
   const [rules, setRules] = useState([]);
@@ -236,7 +237,7 @@ export default function StatutoryRules() {
 
                 <div className="filter-group">
                   <label className="filter-label">Rule Type *</label>
-                  <select
+                  <CustomSelect
                     name="rule_type"
                     value={formData.rule_type}
                     onChange={handleInputChange}
@@ -245,14 +246,14 @@ export default function StatutoryRules() {
                     <option value="Percentage">Percentage</option>
                     <option value="Fixed">Fixed Amount</option>
                     <option value="Slab">Slab Based</option>
-                  </select>
+                  </CustomSelect>
                 </div>
 
                 {formData.rule_type === 'Percentage' && (
                   <>
                     <div className="filter-group">
                       <label className="filter-label">Base Component *</label>
-                      <select
+                      <CustomSelect
                         name="base_component"
                         value={formData.base_component}
                         onChange={handleInputChange}
@@ -260,7 +261,7 @@ export default function StatutoryRules() {
                       >
                         <option value="Basic Salary">Basic Salary</option>
                         <option value="Gross Earnings">Gross Earnings</option>
-                      </select>
+                      </CustomSelect>
                     </div>
                     <div className="filter-group">
                       <label className="filter-label">Percentage (%) *</label>

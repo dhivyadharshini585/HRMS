@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getSalaryStructures, createSalaryStructure, deleteSalaryStructure } from '../../services/payrollService';
 import { getEmployees } from '../../services/employeeService';
 import { IconCheck, IconTrash, IconLayers, IconPlus, IconEye, IconX } from '../../components/common/Icons';
+import CustomSelect from '../../components/common/CustomSelect';
 
 // Helper for dynamic initials
 const getInitials = (firstName, lastName) => {
@@ -458,7 +459,7 @@ export default function SalaryStructures() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
                   <div className="filter-group">
                     <label className="filter-label">Employee *</label>
-                    <select 
+                    <CustomSelect 
                       className="filter-select"
                       value={formData.employee_id}
                       onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
@@ -468,7 +469,7 @@ export default function SalaryStructures() {
                       {employees.map(emp => (
                         <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name}</option>
                       ))}
-                    </select>
+                    </CustomSelect>
                   </div>
                   <div className="filter-group">
                     <label className="filter-label">Effective From *</label>
@@ -482,14 +483,14 @@ export default function SalaryStructures() {
                   </div>
                   <div className="filter-group">
                     <label className="filter-label">Status</label>
-                    <select 
+                    <CustomSelect 
                       className="filter-select"
                       value={formData.status}
                       onChange={(e) => setFormData({...formData, status: e.target.value})}
                     >
                       <option value="Active">Active</option>
                       <option value="Inactive">Inactive</option>
-                    </select>
+                    </CustomSelect>
                   </div>
                 </div>
 
@@ -525,24 +526,24 @@ export default function SalaryStructures() {
                             />
                           </td>
                           <td>
-                            <select 
+                            <CustomSelect 
                               className="filter-select"
                               value={c.type}
                               onChange={(e) => handleComponentChange(c.id, 'type', e.target.value)}
                             >
                               <option value="Earning">Earning</option>
                               <option value="Deduction">Deduction</option>
-                            </select>
+                            </CustomSelect>
                           </td>
                           <td>
-                            <select 
+                            <CustomSelect 
                               className="filter-select"
                               value={c.calculation_type}
                               onChange={(e) => handleComponentChange(c.id, 'calculation_type', e.target.value)}
                             >
                               <option value="fixed">Fixed</option>
                               <option value="percentage">Percentage (of Basic)</option>
-                            </select>
+                            </CustomSelect>
                           </td>
                           <td>
                             <input 

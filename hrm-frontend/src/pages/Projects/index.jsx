@@ -4,6 +4,7 @@ import { projectService } from '../../services/projectService';
 import { getEmployees } from '../../services/employeeService';
 import { useAuthContext } from '../../context/AuthContext';
 import { IconFolder, IconPlus, IconSearch, IconClock, IconAlertCircle } from '../../components/common/Icons';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function Projects() {
   const { user, hasPermission, hasRole } = useAuthContext();
@@ -270,7 +271,7 @@ export default function Projects() {
               style={{ paddingLeft: '32px', width: '100%' }}
             />
           </div>
-          <select
+          <CustomSelect
             className="filter-select"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -281,7 +282,7 @@ export default function Projects() {
             <option value="On Hold">On Hold</option>
             <option value="Completed">Completed</option>
             <option value="Cancelled">Cancelled</option>
-          </select>
+          </CustomSelect>
         </div>
 
         {/* Table */}
@@ -402,7 +403,7 @@ export default function Projects() {
                         value={taskForm.name}
                         onChange={(e) => setTaskForm({ ...taskForm, name: e.target.value })}
                       />
-                      <select
+                      <CustomSelect
                         className="filter-select"
                         style={{ flex: 1 }}
                         value={taskForm.status}
@@ -412,7 +413,7 @@ export default function Projects() {
                         <option value="In Progress">In Progress</option>
                         <option value="Blocked">Blocked</option>
                         <option value="Done">Done</option>
-                      </select>
+                      </CustomSelect>
                     </div>
                     <input
                       type="text"
@@ -496,7 +497,7 @@ export default function Projects() {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '4px' }}>Status</label>
-                  <select
+                  <CustomSelect
                     className="filter-select"
                     style={{ width: '100%' }}
                     value={projectForm.status}
@@ -506,13 +507,13 @@ export default function Projects() {
                     <option value="On Hold">On Hold</option>
                     <option value="Completed">Completed</option>
                     <option value="Cancelled">Cancelled</option>
-                  </select>
+                  </CustomSelect>
                 </div>
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '4px' }}>Project Manager</label>
-                <select
+                <CustomSelect
                   className="filter-select"
                   style={{ width: '100%' }}
                   value={projectForm.manager_id}
@@ -524,7 +525,7 @@ export default function Projects() {
                       {emp.first_name} {emp.last_name} ({emp.employee_id || emp.id})
                     </option>
                   ))}
-                </select>
+                </CustomSelect>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>

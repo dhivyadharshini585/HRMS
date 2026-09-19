@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import attendanceService from '../../services/attendanceService';
 import { useAuthContext } from '../../context/AuthContext';
+import CustomSelect from '../../components/common/CustomSelect';
 
 const Attendance = () => {
   const { user } = useAuthContext();
@@ -255,7 +256,7 @@ const Attendance = () => {
       <div className="filters-bar">
         <div className="filter-group">
           <label className="filter-label">Status</label>
-          <select
+          <CustomSelect
             value={filters.status}
             onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
             className="filter-select"
@@ -264,7 +265,7 @@ const Attendance = () => {
             <option value="Present">Present</option>
             <option value="Late">Late</option>
             <option value="Half Day">Half Day</option>
-          </select>
+          </CustomSelect>
         </div>
 
         <div className="filter-group">

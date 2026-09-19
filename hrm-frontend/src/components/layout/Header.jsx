@@ -15,7 +15,14 @@ export default function Header({ toggleMobileMenu }) {
         >
           <IconMenu />
         </button>
-        <div className="header-title">HRMS Portal</div>
+        <div className="header-title" style={{ fontWeight: 600, color: 'var(--text-primary)', marginRight: '2rem' }}>HRMS Portal</div>
+        <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-full)', padding: '0.35rem 1rem', width: '300px' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '0.5rem' }}>
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" placeholder="Search employees, payroll, policies..." style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.75rem', width: '100%', color: 'var(--text-primary)' }} />
+        </div>
       </div>
       
       <div className="header-right">

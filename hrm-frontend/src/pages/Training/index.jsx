@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useAuthContext } from '../../context/AuthContext';
 import '../../styles/common.css';
+import CustomSelect from '../../components/common/CustomSelect';
 
 function Training() {
   const { hasPermission } = useAuthContext();
@@ -371,7 +372,7 @@ function Training() {
 
                 <div className="filter-group" style={{ marginBottom: '1rem' }}>
                   <label className="filter-label">Trainer *</label>
-                  <select
+                  <CustomSelect
                     name="trainer_employee_id"
                     className="form-control"
                     value={formData.trainer_employee_id}
@@ -382,7 +383,7 @@ function Training() {
                     {employees.map(emp => (
                       <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
@@ -413,7 +414,7 @@ function Training() {
 
                 <div className="filter-group" style={{ marginBottom: '1rem' }}>
                   <label className="filter-label">Status *</label>
-                  <select
+                  <CustomSelect
                     name="status"
                     className="form-control"
                     value={formData.status}
@@ -424,7 +425,7 @@ function Training() {
                     <option value="ongoing">Ongoing</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
-                  </select>
+                  </CustomSelect>
                 </div>
               </div>
               
@@ -461,7 +462,7 @@ function Training() {
               <form onSubmit={handleEnrollEmployee} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', marginBottom: '2rem', background: '#f9fafb', padding: '1rem', borderRadius: '4px' }}>
                 <div className="filter-group" style={{ flex: 1, marginBottom: 0 }}>
                   <label className="filter-label">Enroll Employee</label>
-                  <select
+                  <CustomSelect
                     className="form-control"
                     value={enrollForm.employee_id}
                     onChange={(e) => setEnrollForm({ employee_id: e.target.value })}
@@ -472,7 +473,7 @@ function Training() {
                     {employees.map(emp => (
                       <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name} ({emp.employee_code})</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                 </div>
                 <button 
                   type="submit" 
@@ -508,7 +509,7 @@ function Training() {
                             <td>{a.employee?.first_name} {a.employee?.last_name}</td>
                             <td>{a.employee?.employee_code}</td>
                             <td>
-                              <select 
+                              <CustomSelect 
                                 className="form-control" 
                                 style={{ width: 'auto', padding: '0.25rem 0.5rem' }}
                                 value={a.completion_status || 'enrolled'}
@@ -518,7 +519,7 @@ function Training() {
                                 <option value="completed">Completed</option>
                                 <option value="failed">Failed</option>
                                 <option value="dropped">Dropped</option>
-                              </select>
+                              </CustomSelect>
                             </td>
                             <td>
                               <button className="btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => handleRemoveAttendee(a.id)}>

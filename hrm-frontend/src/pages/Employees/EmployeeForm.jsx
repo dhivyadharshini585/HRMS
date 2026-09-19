@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getEmployee, createEmployee, updateEmployee, getDepartments, getDesignations, getEmployees } from '../../services/employeeService';
 import { ROUTES } from '../../constants/routes';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function EmployeeForm() {
   const navigate = useNavigate();
@@ -170,12 +171,12 @@ export default function EmployeeForm() {
             </div>
             <div className="form-group">
               <label className="form-label">Gender</label>
-              <select name="gender" className="form-select" value={formData.gender} onChange={handleChange}>
+              <CustomSelect name="gender" className="form-select" value={formData.gender} onChange={handleChange}>
                 <option value="">Select Gender</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
                 <option value="Other">Other</option>
-              </select>
+              </CustomSelect>
             </div>
           </div>
 
@@ -189,50 +190,50 @@ export default function EmployeeForm() {
             
             <div className="form-group">
               <label className="form-label">Department</label>
-              <select name="department_id" className="form-select" value={formData.department_id} onChange={handleChange}>
+              <CustomSelect name="department_id" className="form-select" value={formData.department_id} onChange={handleChange}>
                 <option value="">Select Department</option>
                 {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
+              </CustomSelect>
             </div>
             <div className="form-group">
               <label className="form-label">Designation</label>
-              <select name="designation_id" className="form-select" value={formData.designation_id} onChange={handleChange}>
+              <CustomSelect name="designation_id" className="form-select" value={formData.designation_id} onChange={handleChange}>
                 <option value="">Select Designation</option>
                 {designations.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}
-              </select>
+              </CustomSelect>
             </div>
 
             <div className="form-group">
               <label className="form-label">Job Level</label>
-              <select name="job_level" className="form-select" value={formData.job_level} onChange={handleChange}>
+              <CustomSelect name="job_level" className="form-select" value={formData.job_level} onChange={handleChange}>
                 <option value="Junior">Junior</option>
                 <option value="Mid-Level">Mid-Level</option>
                 <option value="Senior">Senior</option>
                 <option value="Lead">Lead</option>
                 <option value="Executive">Executive</option>
-              </select>
+              </CustomSelect>
             </div>
 
             <div className="form-group">
               <label className="form-label">Reporting Manager</label>
-              <select name="manager_id" className="form-select" value={formData.manager_id} onChange={handleChange}>
+              <CustomSelect name="manager_id" className="form-select" value={formData.manager_id} onChange={handleChange}>
                 <option value="">No Manager (Top Level)</option>
                 {managerOptions.map(m => (
                   <option key={m.id} value={m.id}>
                     {m.first_name} {m.last_name} ({m.employee_code})
                   </option>
                 ))}
-              </select>
+              </CustomSelect>
             </div>
 
             <div className="form-group">
               <label className="form-label">Employment Type</label>
-              <select name="employment_type" className="form-select" value={formData.employment_type} onChange={handleChange}>
+              <CustomSelect name="employment_type" className="form-select" value={formData.employment_type} onChange={handleChange}>
                 <option value="Full-time">Full-time</option>
                 <option value="Part-time">Part-time</option>
                 <option value="Contract">Contract</option>
                 <option value="Intern">Intern</option>
-              </select>
+              </CustomSelect>
             </div>
 
             <div className="form-group">
@@ -248,13 +249,13 @@ export default function EmployeeForm() {
             {isEdit && (
               <div className="form-group">
                 <label className="form-label">Employment Status</label>
-                <select name="employment_status" className="form-select" value={formData.employment_status} onChange={handleChange}>
+                <CustomSelect name="employment_status" className="form-select" value={formData.employment_status} onChange={handleChange}>
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
                   <option value="Probation">Probation</option>
                   <option value="On Leave">On Leave</option>
                   <option value="Terminated">Terminated</option>
-                </select>
+                </CustomSelect>
               </div>
             )}
           </div>

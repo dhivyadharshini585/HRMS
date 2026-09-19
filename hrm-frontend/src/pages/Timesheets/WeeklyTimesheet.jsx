@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { timesheetService } from '../../services/timesheetService';
 import { useAuthContext } from '../../context/AuthContext';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function WeeklyTimesheet() {
   const { user } = useAuthContext();
@@ -120,14 +121,14 @@ export default function WeeklyTimesheet() {
               return (
                 <tr key={row.id}>
                   <td>
-                    <select 
+                    <CustomSelect 
                       className="filter-select"
                       value={row.project_id}
                       onChange={(e) => handleEntryChange(idx, 'project_id', e.target.value)}
                     >
                       <option value="">Select Project...</option>
                       {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
+                    </CustomSelect>
                   </td>
                   <td>
                     <input 

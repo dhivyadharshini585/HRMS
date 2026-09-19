@@ -5,6 +5,7 @@ import candidateService from '../../services/candidateService';
 import jobOpeningService from '../../services/jobOpeningService';
 import employeeService from '../../services/employeeService';
 import { useAuthContext } from '../../context/AuthContext';
+import CustomSelect from '../../components/common/CustomSelect';
 
 const INTERVIEW_TYPES = ['HR', 'Technical', 'Managerial', 'Final'];
 const INTERVIEW_MODES = ['Online', 'In-person', 'Phone'];
@@ -560,7 +561,7 @@ const Interviews = () => {
 
       {/* Stats Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div className="card" style={{ padding: '1.25rem', borderRadius: '8px', borderLeft: '4px solid #3b82f6' }}>
+        <div className="card" style={{ padding: '1.25rem', borderRadius: '8px', borderLeft: '4px solid #075E4B' }}>
           <div style={{ fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Interviews</div>
           <div style={{ fontSize: '1.85rem', fontWeight: 700, marginTop: '0.25rem', color: '#0f172a' }}>{totalCount}</div>
         </div>
@@ -597,7 +598,7 @@ const Interviews = () => {
             />
           </div>
           <div>
-            <select
+            <CustomSelect
               id="interview-status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -608,10 +609,10 @@ const Interviews = () => {
               {INTERVIEW_STATUSES.map(st => (
                 <option key={st} value={st}>{st}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div>
-            <select
+            <CustomSelect
               id="interview-type-filter"
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
@@ -622,10 +623,10 @@ const Interviews = () => {
               {INTERVIEW_TYPES.map(t => (
                 <option key={t} value={t}>{t}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div>
-            <select
+            <CustomSelect
               id="interview-candidate-filter"
               value={candidateFilter}
               onChange={(e) => setCandidateFilter(e.target.value)}
@@ -636,10 +637,10 @@ const Interviews = () => {
               {candidates.map(c => (
                 <option key={c.id} value={c.id}>{c.full_name} ({c.candidate_code})</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div>
-            <select
+            <CustomSelect
               id="interview-job-filter"
               value={jobFilter}
               onChange={(e) => setJobFilter(e.target.value)}
@@ -650,10 +651,10 @@ const Interviews = () => {
               {jobOpenings.map(j => (
                 <option key={j.id} value={j.id}>{j.title} ({j.job_code})</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div>
-            <select
+            <CustomSelect
               id="interview-interviewer-filter"
               value={interviewerFilter}
               onChange={(e) => setInterviewerFilter(e.target.value)}
@@ -664,7 +665,7 @@ const Interviews = () => {
               {employees.map(emp => (
                 <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name} ({emp.employee_code})</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div>
             <button
@@ -905,7 +906,7 @@ const Interviews = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Candidate <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     name="candidate_id"
                     id="candidate-select"
                     required
@@ -920,7 +921,7 @@ const Interviews = () => {
                         {c.full_name} ({c.candidate_code})
                       </option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   {formErrors.candidate_id && <div style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.25rem' }}>{formErrors.candidate_id}</div>}
                 </div>
 
@@ -945,7 +946,7 @@ const Interviews = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Interviewer Employee <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     name="interviewer_employee_id"
                     id="interviewer-select"
                     required
@@ -960,7 +961,7 @@ const Interviews = () => {
                         {emp.first_name} {emp.last_name} ({emp.employee_code}) - {emp.department?.name || 'Staff'}
                       </option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   {formErrors.interviewer_employee_id && <div style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.25rem' }}>{formErrors.interviewer_employee_id}</div>}
                 </div>
 
@@ -969,7 +970,7 @@ const Interviews = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Interview Type <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     name="interview_type"
                     required
                     value={formData.interview_type}
@@ -980,7 +981,7 @@ const Interviews = () => {
                     {INTERVIEW_TYPES.map(t => (
                       <option key={t} value={t}>{t}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                 </div>
 
                 {/* Interview Round */}
@@ -1024,7 +1025,7 @@ const Interviews = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Duration (Minutes) <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     name="duration_minutes"
                     required
                     value={formData.duration_minutes}
@@ -1038,7 +1039,7 @@ const Interviews = () => {
                     <option value="60">60 Minutes (1 hour)</option>
                     <option value="90">90 Minutes (1.5 hours)</option>
                     <option value="120">120 Minutes (2 hours)</option>
-                  </select>
+                  </CustomSelect>
                 </div>
 
                 {/* Mode */}
@@ -1046,7 +1047,7 @@ const Interviews = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Interview Mode <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     name="mode"
                     required
                     value={formData.mode}
@@ -1057,7 +1058,7 @@ const Interviews = () => {
                     {INTERVIEW_MODES.map(m => (
                       <option key={m} value={m}>{m}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                 </div>
 
                 {/* Status (When Editing) */}
@@ -1066,7 +1067,7 @@ const Interviews = () => {
                     <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                       Status <span style={{ color: '#ef4444' }}>*</span>
                     </label>
-                    <select
+                    <CustomSelect
                       name="status"
                       value={formData.status}
                       onChange={handleFormChange}
@@ -1076,7 +1077,7 @@ const Interviews = () => {
                       {INTERVIEW_STATUSES.map(s => (
                         <option key={s} value={s}>{s}</option>
                       ))}
-                    </select>
+                    </CustomSelect>
                   </div>
                 )}
               </div>
@@ -1546,7 +1547,7 @@ const Interviews = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Recommendation <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     name="recommendation"
                     id="feedback-recommendation"
                     required
@@ -1558,7 +1559,7 @@ const Interviews = () => {
                     {RECOMMENDATIONS.map(rec => (
                       <option key={rec} value={rec}>{rec}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   {feedbackFormErrors.recommendation && (
                     <div style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.25rem' }}>
                       {feedbackFormErrors.recommendation}
@@ -1570,7 +1571,7 @@ const Interviews = () => {
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
                     Overall Rating (1 to 5) <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     name="overall_rating"
                     id="feedback-overall-rating"
                     required
@@ -1584,7 +1585,7 @@ const Interviews = () => {
                     <option value="3">3 — Meets Requirements</option>
                     <option value="2">2 — Below Expectations</option>
                     <option value="1">1 — Unsatisfactory</option>
-                  </select>
+                  </CustomSelect>
                   {feedbackFormErrors.overall_rating && (
                     <div style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.25rem' }}>
                       {feedbackFormErrors.overall_rating}
@@ -1603,7 +1604,7 @@ const Interviews = () => {
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, marginBottom: '0.2rem' }}>
                       Technical Competency
                     </label>
-                    <select
+                    <CustomSelect
                       name="technical_rating"
                       id="feedback-technical-rating"
                       value={feedbackFormData.technical_rating}
@@ -1617,14 +1618,14 @@ const Interviews = () => {
                       <option value="3">3 — Competent</option>
                       <option value="2">2 — Developing</option>
                       <option value="1">1 — Insufficient</option>
-                    </select>
+                    </CustomSelect>
                   </div>
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, marginBottom: '0.2rem' }}>
                       Communication Skills
                     </label>
-                    <select
+                    <CustomSelect
                       name="communication_rating"
                       id="feedback-communication-rating"
                       value={feedbackFormData.communication_rating}
@@ -1638,14 +1639,14 @@ const Interviews = () => {
                       <option value="3">3 — Adequate</option>
                       <option value="2">2 — Needs Polish</option>
                       <option value="1">1 — Ineffective</option>
-                    </select>
+                    </CustomSelect>
                   </div>
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, marginBottom: '0.2rem' }}>
                       Problem Solving / Analytical
                     </label>
-                    <select
+                    <CustomSelect
                       name="problem_solving_rating"
                       id="feedback-problem-solving-rating"
                       value={feedbackFormData.problem_solving_rating}
@@ -1659,14 +1660,14 @@ const Interviews = () => {
                       <option value="3">3 — Standard Approach</option>
                       <option value="2">2 — Struggled</option>
                       <option value="1">1 — Unable to solve</option>
-                    </select>
+                    </CustomSelect>
                   </div>
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, marginBottom: '0.2rem' }}>
                       Cultural & Team Fit
                     </label>
-                    <select
+                    <CustomSelect
                       name="cultural_fit_rating"
                       id="feedback-cultural-fit-rating"
                       value={feedbackFormData.cultural_fit_rating}
@@ -1680,7 +1681,7 @@ const Interviews = () => {
                       <option value="3">3 — Neutral / Acceptable</option>
                       <option value="2">2 — Slight Concerns</option>
                       <option value="1">1 — Cultural Mismatch</option>
-                    </select>
+                    </CustomSelect>
                   </div>
                 </div>
               </div>

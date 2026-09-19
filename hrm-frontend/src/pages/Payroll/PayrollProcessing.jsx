@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPayroll, getPayrolls } from '../../services/payrollService';
 import { getEmployees } from '../../services/employeeService';
 import { IconUsers, IconCalendar, IconSettings, IconCheck, IconEye, IconAlertCircle } from '../../components/common/Icons';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function PayrollProcessing({ onProcessed }) {
   const [employeeId, setEmployeeId] = useState('');
@@ -135,7 +136,7 @@ export default function PayrollProcessing({ onProcessed }) {
       <div className="filters-bar" style={{ marginBottom: 'var(--space-6)' }}>
         <div className="filter-group">
           <label className="filter-label">Employee *</label>
-          <select
+          <CustomSelect
             value={employeeId}
             onChange={(e) => setEmployeeId(e.target.value)}
             className="filter-select"
@@ -148,12 +149,12 @@ export default function PayrollProcessing({ onProcessed }) {
                 {emp.first_name} {emp.last_name} ({emp.employee_id})
               </option>
             ))}
-          </select>
+          </CustomSelect>
         </div>
 
         <div className="filter-group">
           <label className="filter-label">Month *</label>
-          <select
+          <CustomSelect
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
             className="filter-select"
@@ -165,7 +166,7 @@ export default function PayrollProcessing({ onProcessed }) {
                 {m.label}
               </option>
             ))}
-          </select>
+          </CustomSelect>
         </div>
 
         <div className="filter-group">

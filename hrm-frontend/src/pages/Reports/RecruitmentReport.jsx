@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import reportService from '../../services/reportService';
 import { ROUTES } from '../../constants/routes';
+import CustomSelect from '../../components/common/CustomSelect';
 
 // ─── Status badge helper ───────────────────────────────────────────────────────
 function StatusBadge({ status }) {
@@ -17,8 +18,8 @@ function StatusBadge({ status }) {
 // ─── Summary card ──────────────────────────────────────────────────────────────
 function SummaryCard({ label, value, color }) {
   return (
-    <div className="detail-card" style={{ textAlign: 'center', padding: '20px', borderTop: `4px solid ${color || '#3b82f6'}` }}>
-      <div style={{ fontSize: '2rem', fontWeight: '700', color: color || '#3b82f6' }}>{value ?? '—'}</div>
+    <div className="detail-card" style={{ textAlign: 'center', padding: '20px', borderTop: `4px solid ${color || '#075E4B'}` }}>
+      <div style={{ fontSize: '2rem', fontWeight: '700', color: color || '#075E4B' }}>{value ?? '—'}</div>
       <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '4px' }}>{label}</div>
     </div>
   );
@@ -57,11 +58,11 @@ function DateJobFilters({ filters, onChange, jobOptions = [] }) {
       {jobOptions.length > 0 && (
         <div className="form-group" style={{ margin: 0 }}>
           <label>Job Opening</label>
-          <select className="form-control" value={filters.job_opening_id || ''}
+          <CustomSelect className="form-control" value={filters.job_opening_id || ''}
             onChange={e => onChange({ ...filters, job_opening_id: e.target.value })}>
             <option value="">All Jobs</option>
             {jobOptions.map(j => <option key={j.id} value={j.id}>{j.title} ({j.job_code})</option>)}
-          </select>
+          </CustomSelect>
         </div>
       )}
       <div className="form-group" style={{ margin: 0, display: 'flex', alignItems: 'flex-end' }}>
@@ -149,20 +150,20 @@ export default function RecruitmentReport() {
     return (
       <>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-          <SummaryCard label="Total Applications" value={summary.total} color="#3b82f6" />
+          <SummaryCard label="Total Applications" value={summary.total} color="#075E4B" />
           {Object.entries(byStatus).map(([st, cnt]) => (
             <SummaryCard key={st} label={st} value={cnt} color={st === 'Hired' ? '#10b981' : st === 'Rejected' ? '#ef4444' : '#6366f1'} />
           ))}
         </div>
         <div className="form-group" style={{ marginBottom: '12px' }}>
           <label>Filter by Status</label>
-          <select className="form-control" style={{ maxWidth: '200px' }} value={statusFilter}
+          <CustomSelect className="form-control" style={{ maxWidth: '200px' }} value={statusFilter}
             onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
             <option value="">All Statuses</option>
             {['New','Screening','Shortlisted','Rejected','Hired'].map(s =>
               <option key={s} value={s}>{s}</option>
             )}
-          </select>
+          </CustomSelect>
         </div>
         {renderCandidateTable(['Name', 'Code', 'Job', 'Status', 'Applied'])}
       </>
@@ -197,13 +198,13 @@ export default function RecruitmentReport() {
         </div>
         <div className="form-group" style={{ marginBottom: '12px' }}>
           <label>Filter by Status</label>
-          <select className="form-control" style={{ maxWidth: '200px' }} value={statusFilter}
+          <CustomSelect className="form-control" style={{ maxWidth: '200px' }} value={statusFilter}
             onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
             <option value="">All Statuses</option>
             {['Scheduled','Completed','Cancelled','No Show'].map(s =>
               <option key={s} value={s}>{s}</option>
             )}
-          </select>
+          </CustomSelect>
         </div>
         <div className="table-responsive">
           <table className="data-table">
@@ -255,7 +256,7 @@ export default function RecruitmentReport() {
         )}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '20px' }}>
           <SummaryCard label="Total Hired" value={summary.total_hired} color="#10b981" />
-          <SummaryCard label="Avg Days to Hire" value={summary.avg_days_to_hire ?? '—'} color="#3b82f6" />
+          <SummaryCard label="Avg Days to Hire" value={summary.avg_days_to_hire ?? '—'} color="#075E4B" />
           <SummaryCard label="Fastest Hire (days)" value={summary.min_days_to_hire ?? '—'} color="#6366f1" />
           <SummaryCard label="Longest Hire (days)" value={summary.max_days_to_hire ?? '—'} color="#f59e0b" />
         </div>
@@ -299,7 +300,7 @@ export default function RecruitmentReport() {
         )}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
           <SummaryCard label="Accepted Offers" value={summary.total_accepted_offers} color="#10b981" />
-          <SummaryCard label="Total Offered Salary" value={summary.total_offered_salary != null ? `$${Number(summary.total_offered_salary).toLocaleString()}` : '—'} color="#3b82f6" />
+          <SummaryCard label="Total Offered Salary" value={summary.total_offered_salary != null ? `$${Number(summary.total_offered_salary).toLocaleString()}` : '—'} color="#075E4B" />
           <SummaryCard label="Avg Offered Salary" value={summary.avg_offered_salary != null ? `$${Number(summary.avg_offered_salary).toLocaleString()}` : '—'} color="#6366f1" />
         </div>
         <div className="table-responsive">

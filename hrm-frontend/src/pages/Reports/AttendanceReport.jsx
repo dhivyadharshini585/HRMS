@@ -3,6 +3,7 @@ import reportService from '../../services/reportService';
 import departmentService from '../../services/departmentService';
 import { useAuthContext } from '../../context/AuthContext';
 import { IconDownload, IconFilter } from '../../components/common/Icons';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function AttendanceReport() {
   const { user } = useAuthContext();
@@ -251,7 +252,7 @@ export default function AttendanceReport() {
 
           <div className="filter-group">
             <label className="filter-label">Status</label>
-            <select
+            <CustomSelect
               value={filters.status}
               onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
               className="filter-select"
@@ -261,13 +262,13 @@ export default function AttendanceReport() {
               <option value="Present">Present</option>
               <option value="Late">Late</option>
               <option value="Half Day">Half Day</option>
-            </select>
+            </CustomSelect>
           </div>
 
           {canFilterEmployeeOrDept && (
             <div className="filter-group">
               <label className="filter-label">Department</label>
-              <select
+              <CustomSelect
                 value={filters.department_id}
                 onChange={(e) => setFilters(prev => ({ ...prev, department_id: e.target.value }))}
                 className="filter-select"
@@ -277,7 +278,7 @@ export default function AttendanceReport() {
                 {departments.map((d) => (
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
-              </select>
+              </CustomSelect>
             </div>
           )}
 

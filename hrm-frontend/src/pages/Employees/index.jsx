@@ -4,6 +4,7 @@ import { getEmployees, getDepartments, getDesignations, deleteEmployee } from '.
 import { useAuthContext } from '../../context/AuthContext';
 import { ROUTES } from '../../constants/routes';
 import '../../styles/employees.css';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function Employees() {
   const navigate = useNavigate();
@@ -108,7 +109,7 @@ export default function Employees() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select 
+        <CustomSelect 
           className="filter-select"
           value={departmentId}
           onChange={(e) => setDepartmentId(e.target.value)}
@@ -117,8 +118,8 @@ export default function Employees() {
           {departments.map(d => (
             <option key={d.id} value={d.id}>{d.name}</option>
           ))}
-        </select>
-        <select 
+        </CustomSelect>
+        <CustomSelect 
           className="filter-select"
           value={designationId}
           onChange={(e) => setDesignationId(e.target.value)}
@@ -127,8 +128,8 @@ export default function Employees() {
           {designations.map(d => (
             <option key={d.id} value={d.id}>{d.title}</option>
           ))}
-        </select>
-        <select 
+        </CustomSelect>
+        <CustomSelect 
           className="filter-select"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
@@ -138,7 +139,7 @@ export default function Employees() {
           <option value="Inactive">Inactive</option>
           <option value="Terminated">Terminated</option>
           <option value="On Leave">On Leave</option>
-        </select>
+        </CustomSelect>
       </div>
 
       <div className="table-container">
