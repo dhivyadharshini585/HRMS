@@ -37,7 +37,7 @@ class AIController extends Controller
 
         $jobDescription = $jobOpening->title . "\n" . $jobOpening->description . "\n" . $jobOpening->requirements;
 
-        $filePath = storage_path('app/' . $candidate->resume_path);
+        $filePath = Storage::disk('local')->path($candidate->resume_path);
         if (!file_exists($filePath)) {
             return response()->json(['error' => 'Resume file missing on server.'], 404);
         }
@@ -73,14 +73,20 @@ class AIController extends Controller
         try {
             $result = $this->aiService->screenResume($resumeText, $jobDescription);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'AI Service failed to screen the resume: ' . $e->getMessage()], 502);
+            \Illuminate\Support\Facades\Log::error('AI Service Exception: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json(['error' => 'AI Service failed to screen the resume. Please try again later.'], 502);
         }
 
-        DB::table('candidates')->where('id', $candidate->id)->update([
-            'ai_match_score' => $result['match_score'],
-            'ai_extracted_skills' => $result['extracted_skills'],
-            'ai_extracted_experience' => $result['extracted_experience'],
-        ]);
+        try {
+            DB::table('candidates')->where('id', $candidate->id)->update([
+                'ai_match_score' => $result['match_score'],
+                'ai_extracted_skills' => $result['extracted_skills'],
+                'ai_extracted_experience' => $result['extracted_experience'],
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Database Error during AI Resume update: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json(['error' => 'Failed to save AI screening results to the database.'], 500);
+        }
 
         return response()->json([
             'message' => 'Resume screened successfully.',

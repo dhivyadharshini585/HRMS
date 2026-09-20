@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 class AIService
 {
     protected string $apiKey;
-    protected string $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent';
+    protected string $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
 
     public function __construct()
     {
@@ -22,7 +22,7 @@ class AIService
     {
         if (empty($this->apiKey)) {
             Log::warning("Gemini API key is not set.");
-            return "";
+            throw new \Exception("Gemini API key is not configured.");
         }
 
         $response = Http::withHeaders([
@@ -42,11 +42,15 @@ class AIService
 
         if ($response->successful()) {
             $data = $response->json();
-            return $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+            $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+            if (empty(trim($text))) {
+                throw new \Exception("Gemini returned an empty response.");
+            }
+            return $text;
         }
 
         Log::error("Gemini API Error: " . $response->body());
-        return "";
+        throw new \Exception("Gemini API request failed with status: " . $response->status());
     }
 
     /**
@@ -74,6 +78,10 @@ class AIService
         $response = preg_replace('/\s*```$/', '', $response);
 
         $data = json_decode($response, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \Exception("Gemini returned invalid JSON: " . json_last_error_msg());
+        }
 
         return [
             'match_score' => $data['match_score'] ?? 0,
