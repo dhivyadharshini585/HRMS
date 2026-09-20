@@ -25,20 +25,40 @@ class AIService
             throw new \Exception("Gemini API key is not configured.");
         }
 
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-        ])->post($this->apiUrl . '?key=' . $this->apiKey, [
-            'contents' => [
-                [
-                    'parts' => [
-                        ['text' => $prompt]
+        $maxRetries = 3;
+        $attempt = 0;
+        $response = null;
+
+        while ($attempt < $maxRetries) {
+            $attempt++;
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+            ])->post($this->apiUrl . '?key=' . $this->apiKey, [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt]
+                        ]
                     ]
+                ],
+                'generationConfig' => [
+                    'temperature' => 0.1, // Keep it deterministic
                 ]
-            ],
-            'generationConfig' => [
-                'temperature' => 0.1, // Keep it deterministic
-            ]
-        ]);
+            ]);
+
+            if ($response->successful()) {
+                break;
+            }
+
+            if (in_array($response->status(), [429, 503]) && $attempt < $maxRetries) {
+                Log::warning("Gemini API high demand (Status {$response->status()}). Retrying attempt {$attempt}...");
+                sleep(pow(2, $attempt - 1)); // 1s, 2s
+                continue;
+            }
+
+            break;
+        }
 
         if ($response->successful()) {
             $data = $response->json();
