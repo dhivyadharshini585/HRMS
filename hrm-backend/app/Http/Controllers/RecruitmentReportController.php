@@ -369,7 +369,7 @@ class RecruitmentReportController extends Controller
             $hiredAt = $hiredAtByCandidate->get($c->id);
             $c->hired_at      = $hiredAt;
             $c->days_to_hire  = $hiredAt
-                ? (int) ceil(Carbon::parse($c->created_at)->diffInDays(Carbon::parse($hiredAt), true))
+                ? (int) Carbon::parse($c->created_at)->startOfDay()->diffInDays(Carbon::parse($hiredAt)->startOfDay())
                 : null;
             return $c;
         });
@@ -384,7 +384,7 @@ class RecruitmentReportController extends Controller
         $allDays = $allItems->map(function ($createdAt, $id) use ($hiredAtByCandidate) {
             $hiredAt = $hiredAtByCandidate->get($id);
             return $hiredAt
-                ? (int) ceil(Carbon::parse($createdAt)->diffInDays(Carbon::parse($hiredAt), true))
+                ? (int) Carbon::parse($createdAt)->startOfDay()->diffInDays(Carbon::parse($hiredAt)->startOfDay())
                 : null;
         })->filter()->values();
 
