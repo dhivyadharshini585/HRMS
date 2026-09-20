@@ -2,8 +2,8 @@ import { NavLink } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
 import { 
   IconDashboard, IconUsers, IconFolder, IconBriefcase,
-  IconCalendar, IconClock, IconFileText, IconDollar,
-  IconTrendingUp, IconBook, IconPackage, IconHelp, IconShield,
+  IconCalendar, IconClock, IconFileText, IconDollar, IconRupee,
+  IconTrendingUp, IconBarChart, IconBook, IconPackage, IconHelp, IconShield,
   IconChevronLeft, IconChevronRight
 } from '../common/Icons';
 import { useAuthContext } from '../../context/AuthContext';
@@ -17,8 +17,10 @@ const ICONS = {
   IconCalendar: <IconCalendar />,
   IconClock: <IconClock />,
   IconFileText: <IconFileText />,
-  IconDollar: <IconDollar />,
+  IconDollar: <IconRupee />,
+  IconRupee: <IconRupee />,
   IconTrendingUp: <IconTrendingUp />,
+  IconBarChart: <IconBarChart />,
   IconBook: <IconBook />,
   IconPackage: <IconPackage />,
   IconHelp: <IconHelp />,
