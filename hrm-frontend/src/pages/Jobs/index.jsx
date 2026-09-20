@@ -745,7 +745,7 @@ const Jobs = () => {
                 {/* Salary Min & Max */}
                 <div>
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
-                    Min Salary ($)
+                    Min Salary (₹)
                   </label>
                   <input
                     name="salary_min"
@@ -763,7 +763,7 @@ const Jobs = () => {
 
                 <div>
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
-                    Max Salary ($)
+                    Max Salary (₹)
                   </label>
                   <input
                     name="salary_max"
@@ -919,7 +919,7 @@ const Jobs = () => {
                 <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Salary Range:</span>
                 <div style={{ fontWeight: 600 }}>
                   {viewingJob.salary_min || viewingJob.salary_max ? (
-                    `$${Number(viewingJob.salary_min || 0).toLocaleString()} - $${Number(viewingJob.salary_max || 0).toLocaleString()}`
+                    `₹${Number(viewingJob.salary_min || 0).toLocaleString()} - ₹${Number(viewingJob.salary_max || 0).toLocaleString()}`
                   ) : (
                     'Not Specified'
                   )}

@@ -16,7 +16,7 @@ export const ROLE_NAVIGATION = {
     { path: ROUTES.INTERVIEWS, label: 'Interviews', iconName: 'IconCalendar' },
     { path: ROUTES.OFFER_LETTERS, label: 'Offer Letters', iconName: 'IconFileText' },
     { path: ROUTES.ONBOARDING, label: 'Onboarding', iconName: 'IconUsers' },
-    { path: ROUTES.PAYROLL, label: 'Payroll', iconName: 'IconDollar' },
+    { path: ROUTES.PAYROLL, label: 'Payroll', iconName: 'IconRupee' },
     { path: ROUTES.PERFORMANCE, label: 'Performance', iconName: 'IconTrendingUp' },
     { path: ROUTES.GOALS, label: 'Goals', iconName: 'IconTrendingUp' },
     { path: ROUTES.KPIS, label: 'KPIs', iconName: 'IconTrendingUp' },
@@ -32,6 +32,7 @@ export const ROLE_NAVIGATION = {
     { path: ROUTES.AUDIT_LOGS, label: 'Audit Logs', iconName: 'IconShield' },
     { path: ROUTES.SHIFTS, label: 'Shifts', iconName: 'IconClock' },
     { path: ROUTES.HOLIDAYS, label: 'Holidays', iconName: 'IconCalendar' },
+    { path: ROUTES.SECURITY_SETTINGS, label: 'Security Settings', iconName: 'IconShield' },
   ],
   'HR Admin': [
     { path: ROUTES.DASHBOARD, label: 'Dashboard', iconName: 'IconDashboard' },
@@ -48,7 +49,7 @@ export const ROLE_NAVIGATION = {
     { path: ROUTES.INTERVIEWS, label: 'Interviews', iconName: 'IconCalendar' },
     { path: ROUTES.OFFER_LETTERS, label: 'Offer Letters', iconName: 'IconFileText' },
     { path: ROUTES.ONBOARDING, label: 'Onboarding', iconName: 'IconUsers' },
-    { path: ROUTES.PAYROLL, label: 'Payroll', iconName: 'IconDollar' },
+    { path: ROUTES.PAYROLL, label: 'Payroll', iconName: 'IconRupee' },
     { path: ROUTES.PERFORMANCE, label: 'Performance', iconName: 'IconTrendingUp' },
     { path: ROUTES.GOALS, label: 'Goals', iconName: 'IconTrendingUp' },
     { path: ROUTES.KPIS, label: 'KPIs', iconName: 'IconTrendingUp' },
@@ -64,6 +65,7 @@ export const ROLE_NAVIGATION = {
     { path: ROUTES.AUDIT_LOGS, label: 'Audit Logs', iconName: 'IconShield' },
     { path: ROUTES.SHIFTS, label: 'Shifts', iconName: 'IconClock' },
     { path: ROUTES.HOLIDAYS, label: 'Holidays', iconName: 'IconCalendar' },
+    { path: ROUTES.SECURITY_SETTINGS, label: 'Security Settings', iconName: 'IconShield' },
   ],
   'HR Executive': [
     { path: ROUTES.DASHBOARD, label: 'Dashboard', iconName: 'IconDashboard' },
@@ -132,7 +134,7 @@ export const ROLE_NAVIGATION = {
   'Finance/Payroll Admin': [
     { path: ROUTES.DASHBOARD, label: 'Dashboard', iconName: 'IconDashboard' },
     { path: ROUTES.EMPLOYEES, label: 'Employees', iconName: 'IconUsers' },
-    { path: ROUTES.PAYROLL, label: 'Payroll', iconName: 'IconDollar' },
+    { path: ROUTES.PAYROLL, label: 'Payroll', iconName: 'IconRupee' },
     { path: ROUTES.TIMESHEETS, label: 'Timesheets', iconName: 'IconClock' },
     { path: ROUTES.AUDIT_LOGS, label: 'Audit Logs', iconName: 'IconShield' },
   ],

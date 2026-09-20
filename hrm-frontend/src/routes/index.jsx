@@ -10,6 +10,10 @@ import GuestRoute from '../components/auth/GuestRoute';
 import Login from '../pages/Auth/Login';
 import Register from '../pages/Auth/Register';
 import ForgotPassword from '../pages/Auth/ForgotPassword';
+import AdminRecovery from '../pages/Auth/AdminRecovery';
+import AdminResetPassword from '../pages/Auth/AdminResetPassword';
+import VerifyRecoveryEmail from '../pages/Auth/VerifyRecoveryEmail';
+import SecuritySettings from '../pages/Settings/SecuritySettings';
 
 // Module pages
 import Dashboard from '../pages/Dashboard';
@@ -60,7 +64,10 @@ export const router = createBrowserRouter([
     element: <GuestRoute />,
     children: [
       { path: ROUTES.LOGIN, element: <Login /> },
-      { path: ROUTES.FORGOT_PASSWORD, element: <ForgotPassword /> },
+      { path: ROUTES.FORGOT_PASSWORD, element: <AdminRecovery /> },
+      { path: ROUTES.ADMIN_RECOVERY, element: <AdminRecovery /> },
+      { path: ROUTES.ADMIN_RESET_PASSWORD, element: <AdminResetPassword /> },
+      { path: ROUTES.VERIFY_RECOVERY_EMAIL, element: <VerifyRecoveryEmail /> },
     ]
   },
 
@@ -76,6 +83,12 @@ export const router = createBrowserRouter([
 
           // SELF PROFILE: all six roles
           { path: ROUTES.EMPLOYEE_ME, element: <EmployeeView /> },
+
+          // SECURITY SETTINGS: Super Admin, HR Admin
+          {
+            element: <ProtectedRoute roles={['Super Admin', 'HR Admin']} />,
+            children: [{ path: ROUTES.SECURITY_SETTINGS, element: <SecuritySettings /> }]
+          },
 
           // EMPLOYEES DIRECTORY & CRUD: Super Admin, HR Admin, HR Executive, Manager, Finance/Payroll Admin
           {

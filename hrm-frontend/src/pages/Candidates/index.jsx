@@ -737,7 +737,7 @@ const Candidates = () => {
                       {candidate.total_experience_years ?? 0} yrs
                     </td>
                     <td style={{ padding: '0.75rem 1rem', color: '#475569' }}>
-                      {candidate.expected_salary ? `$${Number(candidate.expected_salary).toLocaleString()}` : '—'}
+                      {candidate.expected_salary ? `₹${Number(candidate.expected_salary).toLocaleString()}` : '—'}
                     </td>
                     <td style={{ padding: '0.75rem 1rem', color: '#475569' }}>
                       {candidate.source || '—'}
@@ -1064,7 +1064,7 @@ const Candidates = () => {
                 {/* Expected Salary */}
                 <div>
                   <label className="form-label" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem' }}>
-                    Expected Salary ($)
+                    Expected Salary (₹)
                   </label>
                   <input
                     name="expected_salary"
@@ -1422,7 +1422,7 @@ const Candidates = () => {
               <div>
                 <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Expected Salary:</span>
                 <div style={{ fontWeight: 600 }}>
-                  {viewingCandidate.expected_salary ? `$${Number(viewingCandidate.expected_salary).toLocaleString()}` : 'Not Specified'}
+                  {viewingCandidate.expected_salary ? `₹${Number(viewingCandidate.expected_salary).toLocaleString()}` : 'Not Specified'}
                 </div>
               </div>
               <div>

@@ -300,8 +300,8 @@ export default function RecruitmentReport() {
         )}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
           <SummaryCard label="Accepted Offers" value={summary.total_accepted_offers} color="#10b981" />
-          <SummaryCard label="Total Offered Salary" value={summary.total_offered_salary != null ? `$${Number(summary.total_offered_salary).toLocaleString()}` : '—'} color="#075E4B" />
-          <SummaryCard label="Avg Offered Salary" value={summary.avg_offered_salary != null ? `$${Number(summary.avg_offered_salary).toLocaleString()}` : '—'} color="#6366f1" />
+          <SummaryCard label="Total Offered Salary" value={summary.total_offered_salary != null ? `₹${Number(summary.total_offered_salary).toLocaleString()}` : '—'} color="#075E4B" />
+          <SummaryCard label="Avg Offered Salary" value={summary.avg_offered_salary != null ? `₹${Number(summary.avg_offered_salary).toLocaleString()}` : '—'} color="#6366f1" />
         </div>
         <div className="table-responsive">
           <table className="data-table">
