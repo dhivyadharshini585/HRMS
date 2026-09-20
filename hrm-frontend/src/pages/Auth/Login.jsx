@@ -145,6 +145,9 @@ export default function Login() {
             <input type="checkbox" style={{ width: '1rem', height: '1rem', borderRadius: '0.25rem', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#0a4d3a', cursor: 'pointer' }} />
             <span style={{ fontSize: '13px', color: '#64748b' }}>Remember me</span>
           </label>
+          <Link to={ROUTES.ADMIN_RECOVERY} style={{ fontSize: '13px', fontWeight: 600, color: '#0a4d3a', textDecoration: 'none' }}>
+            Forgot password?
+          </Link>
         </div>
 
         <button 

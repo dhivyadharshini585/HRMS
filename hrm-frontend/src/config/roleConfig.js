@@ -32,6 +32,7 @@ export const ROLE_NAVIGATION = {
     { path: ROUTES.AUDIT_LOGS, label: 'Audit Logs', iconName: 'IconShield' },
     { path: ROUTES.SHIFTS, label: 'Shifts', iconName: 'IconClock' },
     { path: ROUTES.HOLIDAYS, label: 'Holidays', iconName: 'IconCalendar' },
+    { path: ROUTES.SECURITY_SETTINGS, label: 'Security Settings', iconName: 'IconShield' },
   ],
   'HR Admin': [
     { path: ROUTES.DASHBOARD, label: 'Dashboard', iconName: 'IconDashboard' },
@@ -64,6 +65,7 @@ export const ROLE_NAVIGATION = {
     { path: ROUTES.AUDIT_LOGS, label: 'Audit Logs', iconName: 'IconShield' },
     { path: ROUTES.SHIFTS, label: 'Shifts', iconName: 'IconClock' },
     { path: ROUTES.HOLIDAYS, label: 'Holidays', iconName: 'IconCalendar' },
+    { path: ROUTES.SECURITY_SETTINGS, label: 'Security Settings', iconName: 'IconShield' },
   ],
   'HR Executive': [
     { path: ROUTES.DASHBOARD, label: 'Dashboard', iconName: 'IconDashboard' },

@@ -5,6 +5,7 @@ use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminRecoveryController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\ProjectController;
@@ -20,7 +21,16 @@ Route::get('/health', function () {
 
 Route::post('/login', [AuthController::class, 'login']);
 
+// Public Admin Password Recovery & Email Verification Endpoints
+Route::post('/admin/recovery-email/verify', [AdminRecoveryController::class, 'verifyRecoveryEmail'])->middleware('throttle:10,1');
+Route::post('/admin/password-recovery/request', [AdminRecoveryController::class, 'requestPasswordReset'])->middleware('throttle:3,1');
+Route::post('/admin/password-recovery/verify-token', [AdminRecoveryController::class, 'verifyResetToken'])->middleware('throttle:10,1');
+Route::post('/admin/password-recovery/reset', [AdminRecoveryController::class, 'resetPassword'])->middleware('throttle:5,1');
+
 Route::middleware('auth:sanctum')->group(function () {
+    // Authenticated Admin Recovery Email Configuration & Status
+    Route::post('/admin/recovery-email/setup', [AdminRecoveryController::class, 'setupRecoveryEmail']);
+    Route::get('/admin/recovery-email/status', [AdminRecoveryController::class, 'getRecoveryEmailStatus']);
     Route::get('/user', function (Request $request) {
         $user = $request->user();
         return response()->json([
