@@ -118,7 +118,10 @@ jobs:
             --comment "HRMS GitHub Actions deployment" \
             --parameters 'commands=[
               "set -e",
-              "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS && git fetch origin main && git pull --ff-only origin main\"",
+              "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS && git fetch origin main\"",
+              "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS && if [ -n \\\"\\$(git status --porcelain)\\\" ]; then echo 'ERROR: EC2 working tree is not clean. Aborting deployment.'; git status --short; exit 1; fi\"",
+              "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS && LOCAL=\\$(git rev-parse HEAD); REMOTE=\\$(git rev-parse origin/main); if [ \\\"\\$LOCAL\\\" = \\\"\\$REMOTE\\\" ]; then echo 'Up to date.'; elif git merge-base --is-ancestor \\\"\\$LOCAL\\\" \\\"\\$REMOTE\\\"; then git merge --ff-only origin/main; else git branch pre-deployment-\\$(date +%Y%m%d-%H%M%S); git reset --hard origin/main; fi\"",
+              "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS && if [ \\\"\\$(git rev-parse HEAD)\\\" != \\\"\\$(git rev-parse origin/main)\\\" ]; then echo 'Failed to synchronize.'; exit 1; fi\"",
               "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS/hrm-backend && composer install --no-dev --optimize-autoloader\"",
               "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS/hrm-backend && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views\"",
               "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS/hrm-backend && php artisan migrate --force\"",
