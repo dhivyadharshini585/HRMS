@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getEmployee, createEmployee, updateEmployee, getDepartments, getDesignations, getEmployees } from '../../services/employeeService';
+import { getEmployee, createEmployee, updateEmployee, getDepartments, getDesignations, getEmployees, changePassword } from '../../services/employeeService';
+import { useAuthContext } from '../../context/AuthContext';
 import { ROUTES } from '../../constants/routes';
 import CustomSelect from '../../components/common/CustomSelect';
 
@@ -8,14 +9,27 @@ export default function EmployeeForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
+  const { hasRole } = useAuthContext();
   
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [currentEmployee, setCurrentEmployee] = useState(null);
   
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [managerOptions, setManagerOptions] = useState([]);
+
+  const [createCredentials, setCreateCredentials] = useState(false);
+  const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
+
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [changePasswordVal, setChangePasswordVal] = useState('');
+  const [changePasswordConfirmVal, setChangePasswordConfirmVal] = useState('');
+  const [changePasswordSubmitting, setChangePasswordSubmitting] = useState(false);
+  const [changePasswordError, setChangePasswordError] = useState('');
+  const [changePasswordSuccess, setChangePasswordSuccess] = useState('');
   
   const [formData, setFormData] = useState({
     first_name: '',
@@ -62,14 +76,20 @@ export default function EmployeeForm() {
 
         if (isEdit) {
           const emp = await getEmployee(id, { signal: controller.signal });
+          setCurrentEmployee(emp);
+          const formatDateForInput = (val) => {
+            if (!val) return '';
+            const str = String(val);
+            return str.includes('T') ? str.split('T')[0] : str.substring(0, 10);
+          };
           setFormData({
             first_name: emp.first_name || '',
             last_name: emp.last_name || '',
             email: emp.email || '',
             phone: emp.phone || '',
-            date_of_birth: emp.date_of_birth || '',
+            date_of_birth: formatDateForInput(emp.date_of_birth),
             gender: emp.gender || '',
-            date_of_joining: emp.date_of_joining || '',
+            date_of_joining: formatDateForInput(emp.date_of_joining),
             department_id: emp.department_id || '',
             designation_id: emp.designation_id || '',
             job_level: emp.job_level || 'Mid-Level',
@@ -102,6 +122,44 @@ export default function EmployeeForm() {
     return () => { controller.abort(); };
   }, [id, isEdit]);
 
+  const handleChangePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setChangePasswordSubmitting(true);
+    setChangePasswordError('');
+
+    if (changePasswordVal !== changePasswordConfirmVal) {
+      setChangePasswordError('Passwords do not match.');
+      setChangePasswordSubmitting(false);
+      return;
+    }
+
+    if (changePasswordVal.length < 8) {
+      setChangePasswordError('Password must be at least 8 characters long.');
+      setChangePasswordSubmitting(false);
+      return;
+    }
+
+    try {
+      await changePassword(id, {
+        password: changePasswordVal,
+        password_confirmation: changePasswordConfirmVal,
+      });
+      setChangePasswordSuccess('Employee password changed successfully and active sessions were revoked.');
+      setShowChangePasswordModal(false);
+      setChangePasswordVal('');
+      setChangePasswordConfirmVal('');
+    } catch (err) {
+      if (err.response?.data?.errors) {
+        const firstErr = Object.values(err.response.data.errors)[0][0];
+        setChangePasswordError(firstErr);
+      } else {
+        setChangePasswordError(err.response?.data?.message || 'Failed to change password.');
+      }
+    } finally {
+      setChangePasswordSubmitting(false);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -116,7 +174,23 @@ export default function EmployeeForm() {
       if (isEdit) {
         await updateEmployee(id, formData);
       } else {
-        await createEmployee(formData);
+        const payload = { ...formData };
+        if (hasRole('Super Admin') && createCredentials) {
+          if (password !== passwordConfirmation) {
+            setError('Passwords do not match.');
+            setSubmitting(false);
+            return;
+          }
+          if (password.length < 8) {
+            setError('Password must be at least 8 characters long.');
+            setSubmitting(false);
+            return;
+          }
+          payload.create_credentials = true;
+          payload.password = password;
+          payload.password_confirmation = passwordConfirmation;
+        }
+        await createEmployee(payload);
       }
       navigate(ROUTES.EMPLOYEES);
     } catch (err) {
@@ -124,7 +198,7 @@ export default function EmployeeForm() {
         const firstError = Object.values(err.response.data.errors)[0][0];
         setError(firstError);
       } else {
-        setError('An unexpected error occurred while saving.');
+        setError(err.response?.data?.message || 'An unexpected error occurred while saving.');
       }
     } finally {
       setSubmitting(false);
@@ -140,6 +214,12 @@ export default function EmployeeForm() {
       </div>
       
       {error && <div style={{ color: '#ef4444', backgroundColor: '#fee2e2', padding: '0.75rem', borderRadius: 'var(--radius-md)', marginBottom: '1rem' }}>{error}</div>}
+      {changePasswordSuccess && (
+        <div style={{ color: '#065f46', backgroundColor: '#d1fae5', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{changePasswordSuccess}</span>
+          <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => setChangePasswordSuccess('')}>✕</button>
+        </div>
+      )}
 
       <div className="form-container">
         <form onSubmit={handleSubmit}>
@@ -179,6 +259,89 @@ export default function EmployeeForm() {
               </CustomSelect>
             </div>
           </div>
+
+          {/* Section: Account Management (Super Admin Only, Existing Linked Employee) */}
+          {isEdit && hasRole('Super Admin') && currentEmployee?.user_id && (
+            <>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: '1.5rem 0 1rem 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Account Management</h3>
+              <div className="form-grid">
+                <div className="form-group full-width" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', backgroundColor: 'var(--bg-surface-hover, #f9fafb)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                  <div>
+                    <span style={{ fontWeight: 600, display: 'block', marginBottom: '0.25rem', color: '#059669' }}>
+                      ✓ Login Account Linked
+                    </span>
+                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                      User Email: {currentEmployee.user?.email || formData.email}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => {
+                      setShowChangePasswordModal(true);
+                      setChangePasswordError('');
+                      setChangePasswordVal('');
+                      setChangePasswordConfirmVal('');
+                    }}
+                  >
+                    Change Password
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Section: Login Credentials (Super Admin Only, New Employees Only) */}
+          {!isEdit && hasRole('Super Admin') && (
+            <>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: '1.5rem 0 1rem 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Login Credentials</h3>
+              <div className="form-grid">
+                <div className="form-group full-width" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: createCredentials ? '1rem' : 0 }}>
+                  <input
+                    type="checkbox"
+                    id="create_credentials"
+                    checked={createCredentials}
+                    onChange={(e) => setCreateCredentials(e.target.checked)}
+                    style={{ width: '1.1rem', height: '1.1rem', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="create_credentials" style={{ fontWeight: 500, cursor: 'pointer' }}>
+                    Create User Login Account for this Employee
+                  </label>
+                </div>
+
+                {createCredentials && (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label">Password *</label>
+                      <input
+                        type="password"
+                        name="password"
+                        className="form-input"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required={createCredentials}
+                        minLength={8}
+                        placeholder="Min 8 characters"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Confirm Password *</label>
+                      <input
+                        type="password"
+                        name="password_confirmation"
+                        className="form-input"
+                        value={passwordConfirmation}
+                        onChange={(e) => setPasswordConfirmation(e.target.value)}
+                        required={createCredentials}
+                        minLength={8}
+                        placeholder="Re-enter password"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
 
           {/* Section: Job & Employment */}
           <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: '1.5rem 0 1rem 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Job & Employment Details</h3>
@@ -311,6 +474,87 @@ export default function EmployeeForm() {
           </div>
         </form>
       </div>
+
+      {/* Modal for Super Admin changing employee password on Edit form */}
+      {showChangePasswordModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: 'var(--bg-surface, #ffffff)',
+            padding: '1.5rem',
+            borderRadius: 'var(--radius-lg, 8px)',
+            width: '100%',
+            maxWidth: '450px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+          }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+              Change Employee Password
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              Setting a new password for <strong>{formData.first_name} {formData.last_name}</strong> ({currentEmployee?.user?.email || formData.email}). Active sessions will be terminated.
+            </p>
+
+            {changePasswordError && (
+              <div style={{ color: '#ef4444', backgroundColor: '#fee2e2', padding: '0.5rem 0.75rem', borderRadius: '4px', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                {changePasswordError}
+              </div>
+            )}
+
+            <form onSubmit={handleChangePasswordSubmit}>
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label className="form-label">New Password *</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={changePasswordVal}
+                  onChange={(e) => setChangePasswordVal(e.target.value)}
+                  required
+                  minLength={8}
+                  placeholder="Min 8 characters"
+                />
+              </div>
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                <label className="form-label">Confirm New Password *</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={changePasswordConfirmVal}
+                  onChange={(e) => setChangePasswordConfirmVal(e.target.value)}
+                  required
+                  minLength={8}
+                  placeholder="Re-enter new password"
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowChangePasswordModal(false)}
+                  disabled={changePasswordSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={changePasswordSubmitting}
+                >
+                  {changePasswordSubmitting ? 'Updating...' : 'Change Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
