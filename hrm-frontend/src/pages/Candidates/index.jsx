@@ -81,7 +81,58 @@ const Candidates = () => {
   const [extractedData, setExtractedData] = useState(null);
   const [selectedFieldsToApply, setSelectedFieldsToApply] = useState({});
   const [applyingFields, setApplyingFields] = useState(false);
-  
+  // AI Screening State
+  const [isScreeningModalOpen, setIsScreeningModalOpen] = useState(false);
+  const [screeningProgress, setScreeningProgress] = useState(0);
+  const [screeningStage, setScreeningStage] = useState('');
+  const [screeningError, setScreeningError] = useState('');
+  const [isScreening, setIsScreening] = useState(false);
+  const [screeningCandidate, setScreeningCandidate] = useState(null);
+
+  const handleAIScreen = async (candidate) => {
+    if (isScreening) return;
+    setScreeningCandidate(candidate);
+    setIsScreening(true);
+    setIsScreeningModalOpen(true);
+    setScreeningProgress(0);
+    setScreeningStage('Preparing resume...');
+    setScreeningError('');
+
+    let currentProgress = 0;
+    const progressInterval = setInterval(() => {
+      currentProgress += Math.floor(Math.random() * 5) + 3; // increment by 3-7%
+      if (currentProgress > 95) currentProgress = 95;
+
+      setScreeningProgress(currentProgress);
+
+      if (currentProgress < 15) setScreeningStage('Preparing resume...');
+      else if (currentProgress < 35) setScreeningStage('Extracting resume content...');
+      else if (currentProgress < 55) setScreeningStage('Analyzing candidate information...');
+      else if (currentProgress < 75) setScreeningStage('Evaluating skills and experience...');
+      else if (currentProgress < 90) setScreeningStage('Generating AI screening assessment...');
+      else setScreeningStage('Finalizing screening result...');
+    }, 1000);
+
+    try {
+      const res = await aiService.screenResume(candidate.id);
+      clearInterval(progressInterval);
+      setScreeningProgress(100);
+      setScreeningStage('AI Screening completed');
+
+      setTimeout(() => {
+        setIsScreening(false);
+        setIsScreeningModalOpen(false);
+        alert(`Resume Screened!\nMatch Score: ${res.data.match_score}\nSkills: ${res.data.extracted_skills}`);
+        fetchCandidates();
+        setIsResumeModalOpen(false);
+      }, 700);
+    } catch (e) {
+      clearInterval(progressInterval);
+      setScreeningError(e.response?.data?.error || 'Failed to screen resume via AI');
+      setIsScreening(false);
+    }
+  };
+
   // Status Pipeline State
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [statusCandidate, setStatusCandidate] = useState(null);
@@ -1714,18 +1765,9 @@ const Candidates = () => {
                     <button
                       type="button"
                       className="btn btn-primary btn-sm"
-                      onClick={async () => {
-                        try {
-                          // Note: A real app would have a loading state for this specific button
-                          const res = await aiService.screenResume(resumeCandidate.id);
-                          alert(`Resume Screened!\nMatch Score: ${res.data.match_score}\nSkills: ${res.data.extracted_skills}`);
-                          fetchCandidates(); // Refresh list to get new AI data
-                          setIsResumeModalOpen(false); // Close modal on success
-                        } catch (e) {
-                          alert(e.response?.data?.error || 'Failed to screen resume via AI');
-                        }
-                      }}
-                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', backgroundColor: '#8b5cf6', borderColor: '#7c3aed', color: 'white' }}
+                      onClick={() => handleAIScreen(resumeCandidate)}
+                      disabled={isScreening}
+                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', backgroundColor: isScreening ? '#cbd5e1' : '#8b5cf6', borderColor: isScreening ? '#94a3b8' : '#7c3aed', color: 'white', cursor: isScreening ? 'not-allowed' : 'pointer' }}
                     >
                       ✨ AI Screen
                     </button>
@@ -2061,6 +2103,100 @@ const Candidates = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* AI Screening Progress Modal */}
+      {isScreeningModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1050 }}>
+          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', width: '100%', maxWidth: '450px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ color: '#8b5cf6' }}>✨</span> AI Screening
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isScreening) {
+                    setIsScreeningModalOpen(false);
+                  }
+                }}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: isScreening ? 'not-allowed' : 'pointer', color: isScreening ? '#cbd5e1' : '#64748b' }}
+                disabled={isScreening}
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '0.8rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Candidate</div>
+              <div style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>
+                {screeningCandidate?.first_name} {screeningCandidate?.last_name}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '0.8rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Resume</div>
+              <div style={{ fontSize: '1rem', fontWeight: 500, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                📄 {screeningCandidate?.resume?.original_name || 'No resume attached'}
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem' }}>
+              <div style={{ fontSize: '1.05rem', fontWeight: 600, color: '#0f172a', marginBottom: '1rem' }}>
+                {screeningError ? 'AI Screening Failed' : 'AI Screening in Progress'}
+              </div>
+
+              {!screeningError ? (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#475569' }}>
+                    <span>{screeningStage}</span>
+                    <span style={{ fontWeight: 600, color: '#8b5cf6' }}>{screeningProgress}%</span>
+                  </div>
+
+                  <div
+                    style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '9999px', overflow: 'hidden', marginBottom: '1rem' }}
+                    role="progressbar"
+                    aria-valuenow={screeningProgress}
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-busy={isScreening}
+                  >
+                    <div
+                      style={{ height: '100%', backgroundColor: '#8b5cf6', width: `${screeningProgress}%`, transition: 'width 0.5s ease-out' }}
+                    ></div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                    <div style={{ marginTop: '0.2rem' }}>
+                      <span className="spinner-grow spinner-grow-sm" style={{ color: '#8b5cf6' }} role="status" aria-hidden="true"></span>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>● AI screening in progress</div>
+                      <div style={{ color: '#64748b', fontSize: '0.85rem' }}>Please wait while we analyze the resume.</div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '1rem', borderRadius: '6px', color: '#991b1b', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                    {screeningError}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => handleAIScreen(screeningCandidate)}
+                      style={{ backgroundColor: '#8b5cf6', borderColor: '#7c3aed' }}
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
