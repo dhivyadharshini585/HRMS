@@ -28,7 +28,6 @@ class AIService
         $maxRetries = 3;
         $attempt = 0;
         $response = null;
-        $maxDelaySeconds = 60;
 
         while ($attempt < $maxRetries) {
             $attempt++;
@@ -53,44 +52,8 @@ class AIService
             }
 
             if (in_array($response->status(), [429, 503]) && $attempt < $maxRetries) {
-                $errorData = $response->json();
-
-                // Detect hard quota exhaustion
-                if ($response->status() === 429) {
-                    $errorMessage = '';
-                    if (is_array($errorData) && isset($errorData['error']['message'])) {
-                        $errorMessage = strtolower($errorData['error']['message']);
-                    }
-                    if (strpos($errorMessage, 'exceeded your current quota') !== false ||
-                        strpos($errorMessage, 'quota') !== false ||
-                        strpos($errorMessage, 'generate_content_free_tier_requests') !== false) {
-                        Log::error("Gemini API hard quota exhaustion detected. Skipping retries.");
-                        break;
-                    }
-                }
-
-                $delay = 0;
-
-                if (is_array($errorData) && isset($errorData['error']['details']) && is_array($errorData['error']['details'])) {
-                    foreach ($errorData['error']['details'] as $detail) {
-                        if (isset($detail['@type']) && strpos($detail['@type'], 'google.rpc.RetryInfo') !== false && isset($detail['retryDelay'])) {
-                            $delayStr = str_replace('s', '', $detail['retryDelay']);
-                            $delay = (int) ceil((float) $delayStr);
-                            break;
-                        }
-                    }
-                }
-
-                if ($delay <= 0) {
-                    $delay = pow(2, $attempt - 1) + mt_rand(0, 1);
-                }
-
-                if ($delay > $maxDelaySeconds) {
-                    $delay = $maxDelaySeconds;
-                }
-
-                Log::warning("Gemini API transient failure (status {$response->status()}). Retrying after {$delay} seconds...");
-                sleep($delay);
+                Log::warning("Gemini API high demand (Status {$response->status()}). Retrying attempt {$attempt}...");
+                sleep(pow(2, $attempt - 1)); // 1s, 2s
                 continue;
             }
 

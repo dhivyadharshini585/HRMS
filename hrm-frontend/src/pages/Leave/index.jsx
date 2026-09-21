@@ -3,7 +3,6 @@ import leaveService from '../../services/leaveService';
 import { getEmployees } from '../../services/employeeService';
 import { useAuthContext } from '../../context/AuthContext';
 import CustomSelect from '../../components/common/CustomSelect';
-import { formatDate } from '../../utils/dateUtils';
 
 const Leave = () => {
   const { user } = useAuthContext();
@@ -447,8 +446,8 @@ const Leave = () => {
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{req.employee?.employee_code}</div>
                       </td>
                       <td style={{ fontWeight: 500 }}>{req.leave_type?.name}</td>
-                      <td style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>{formatDate(req.from_date)}</td>
-                      <td style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>{formatDate(req.to_date)}</td>
+                      <td style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>{req.from_date}</td>
+                      <td style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>{req.to_date}</td>
                       <td style={{ fontWeight: 600, color: 'var(--primary-color)' }}>{req.number_of_days}</td>
                       <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {req.reason}

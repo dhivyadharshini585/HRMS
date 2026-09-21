@@ -47,8 +47,6 @@ class StoreEmployeeRequest extends FormRequest
             'manager_id' => 'nullable|exists:employees,id',
             'work_location' => 'nullable|string|max:100',
             'work_shift' => 'nullable|string|max:50',
-            'create_credentials' => 'nullable|boolean',
-            'password' => 'required_if:create_credentials,true|nullable|string|min:8|confirmed',
         ];
     }
 

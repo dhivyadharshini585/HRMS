@@ -40,16 +40,6 @@ export const getDesignations = async (options = {}) => {
   return response.data;
 };
 
-export const createCredentials = async (employeeId, credentialData) => {
-  const response = await api.post(`/employees/${employeeId}/credentials`, credentialData);
-  return response.data;
-};
-
-export const changePassword = async (employeeId, passwordData) => {
-  const response = await api.post(`/employees/${employeeId}/password`, passwordData);
-  return response.data;
-};
-
 export default {
   getEmployees,
   getEmployee,
@@ -59,6 +49,4 @@ export default {
   deleteEmployee,
   getDepartments,
   getDesignations,
-  createCredentials,
-  changePassword,
 };

@@ -5,8 +5,6 @@ import departmentService from '../../services/departmentService';
 import { useAuthContext } from '../../context/AuthContext';
 import { IconDownload, IconFilter } from '../../components/common/Icons';
 import CustomSelect from '../../components/common/CustomSelect';
-import { formatDate } from '../../utils/dateUtils';
-
 
 export default function LeaveReport() {
   const { user } = useAuthContext();
@@ -379,7 +377,7 @@ export default function LeaveReport() {
                       <span style={{ fontWeight: 500 }}>{req.leave_type?.name || '—'}</span>
                     </td>
                     <td style={{ fontSize: '0.825rem', whiteSpace: 'nowrap' }}>
-                      {formatDate(req.from_date)} <span style={{ color: 'var(--text-muted)' }}>to</span> {formatDate(req.to_date)}
+                      {req.from_date} <span style={{ color: 'var(--text-muted)' }}>to</span> {req.to_date}
                     </td>
                     <td style={{ fontWeight: 600, color: 'var(--primary-color)' }}>
                       {req.number_of_days} {req.number_of_days === 1 ? 'day' : 'days'}
