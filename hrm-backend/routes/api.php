@@ -65,6 +65,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/employees/{employee}', [EmployeeController::class, 'show']);
     Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->middleware('permission:employees.update');
     Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->middleware('permission:employees.delete');
+    Route::post('/employees/{employee}/credentials', [EmployeeController::class, 'createCredentials']);
+    Route::post('/employees/{employee}/password', [EmployeeController::class, 'changePassword']);
 
     // Document Management endpoints
     Route::get('/documents', [App\Http\Controllers\DocumentController::class, 'index']);

@@ -7,8 +7,12 @@ use App\Http\Requests\UpdateEmployeeRequest;
 use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Employee;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class EmployeeController extends Controller
 {
@@ -71,15 +75,45 @@ class EmployeeController extends Controller
     public function store(StoreEmployeeRequest $request)
     {
         $validated = $request->validated();
+        $user = $request->user();
 
-        // Auto-generate employee code
-        $validated['employee_code'] = Employee::generateEmployeeCode();
+        $createCredentials = filter_var($request->input('create_credentials', false), FILTER_VALIDATE_BOOLEAN);
 
-        $employee = Employee::create($validated);
+        if ($createCredentials) {
+            if (!$user || !$user->hasRole('Super Admin')) {
+                return response()->json([
+                    'message' => 'Unauthorized. Only Super Admin can create login credentials.'
+                ], 403);
+            }
+
+            if (User::where('email', $validated['email'])->exists()) {
+                throw ValidationException::withMessages([
+                    'email' => ['A user account with this email address already exists.'],
+                ]);
+            }
+        }
+
+        $employee = DB::transaction(function () use ($validated, $request, $createCredentials) {
+            if ($createCredentials) {
+                $userAccount = User::create([
+                    'name' => trim($validated['first_name'] . ' ' . $validated['last_name']),
+                    'email' => $validated['email'],
+                    'password' => Hash::make($request->input('password')),
+                ]);
+                $userAccount->assignRole('Employee');
+                $validated['user_id'] = $userAccount->id;
+            }
+
+            unset($validated['create_credentials'], $validated['password'], $validated['password_confirmation']);
+
+            $validated['employee_code'] = Employee::generateEmployeeCode();
+
+            return Employee::create($validated);
+        });
 
         return response()->json([
             'message' => 'Employee created successfully',
-            'data' => $employee->load(['department', 'designation'])
+            'data' => $employee->load(['department', 'designation', 'user'])
         ], Response::HTTP_CREATED);
     }
 
@@ -199,5 +233,89 @@ class EmployeeController extends Controller
     {
         $designations = Designation::select('id', 'title')->orderBy('title')->get();
         return response()->json($designations);
+    }
+
+    /**
+     * Create login credentials for an existing employee.
+     */
+    public function createCredentials(Request $request, Employee $employee)
+    {
+        $authUser = $request->user();
+
+        if (!$authUser || !$authUser->hasRole('Super Admin')) {
+            return response()->json([
+                'message' => 'Unauthorized. Only Super Admin can create login credentials.'
+            ], 403);
+        }
+
+        if ($employee->user_id !== null) {
+            return response()->json([
+                'message' => 'This employee already has a login account.'
+            ], 400);
+        }
+
+        if (User::where('email', $employee->email)->exists()) {
+            throw ValidationException::withMessages([
+                'email' => ['A user account with this email address already exists.'],
+            ]);
+        }
+
+        $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $updatedEmployee = DB::transaction(function () use ($request, $employee) {
+            $newUser = User::create([
+                'name' => trim($employee->first_name . ' ' . $employee->last_name),
+                'email' => $employee->email,
+                'password' => Hash::make($request->input('password')),
+            ]);
+            $newUser->assignRole('Employee');
+
+            $employee->update(['user_id' => $newUser->id]);
+            return $employee;
+        });
+
+        return response()->json([
+            'message' => 'Login credentials created successfully',
+            'data' => $updatedEmployee->fresh()->load(['department', 'designation', 'user'])
+        ], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Change password for an existing employee's linked user account.
+     */
+    public function changePassword(Request $request, Employee $employee)
+    {
+        $authUser = $request->user();
+
+        if (!$authUser || !$authUser->hasRole('Super Admin')) {
+            return response()->json([
+                'message' => 'Unauthorized. Only Super Admin can change employee passwords.'
+            ], 403);
+        }
+
+        if ($employee->user_id === null || !$employee->user) {
+            return response()->json([
+                'message' => 'This employee does not have a linked user account.'
+            ], 400);
+        }
+
+        $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = $employee->user;
+        $user->update([
+            'password' => Hash::make($request->input('password')),
+        ]);
+
+        // Revoke all existing Sanctum tokens for the user
+        $user->tokens()->delete();
+
+        return response()->json([
+            'message' => 'Employee password changed successfully and active sessions were revoked.',
+            'data' => $employee->fresh()->load(['department', 'designation', 'user'])
+        ]);
     }
 }

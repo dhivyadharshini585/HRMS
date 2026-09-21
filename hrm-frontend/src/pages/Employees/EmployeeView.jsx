@@ -1,17 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEmployee, getMyProfile } from '../../services/employeeService';
+import { getEmployee, getMyProfile, createCredentials, changePassword } from '../../services/employeeService';
 import { useAuthContext } from '../../context/AuthContext';
 import { ROUTES } from '../../constants/routes';
 
 export default function EmployeeView() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { hasPermission } = useAuthContext();
+  const { hasPermission, hasRole } = useAuthContext();
   
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [credPassword, setCredPassword] = useState('');
+  const [credPasswordConfirm, setCredPasswordConfirm] = useState('');
+  const [credSubmitting, setCredSubmitting] = useState(false);
+  const [credError, setCredError] = useState('');
+  const [credSuccess, setCredSuccess] = useState('');
+
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [changePasswordVal, setChangePasswordVal] = useState('');
+  const [changePasswordConfirmVal, setChangePasswordConfirmVal] = useState('');
+  const [changePasswordSubmitting, setChangePasswordSubmitting] = useState(false);
+  const [changePasswordError, setChangePasswordError] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -79,6 +92,99 @@ export default function EmployeeView() {
     );
   }
 
+  const handleCreateCredentialsSubmit = async (e) => {
+    e.preventDefault();
+    setCredSubmitting(true);
+    setCredError('');
+
+    if (credPassword !== credPasswordConfirm) {
+      setCredError('Passwords do not match.');
+      setCredSubmitting(false);
+      return;
+    }
+
+    if (credPassword.length < 8) {
+      setCredError('Password must be at least 8 characters long.');
+      setCredSubmitting(false);
+      return;
+    }
+
+    try {
+      await createCredentials(employee.id, {
+        password: credPassword,
+        password_confirmation: credPasswordConfirm,
+      });
+      setCredSuccess('Login credentials created successfully.');
+      setShowCredentialsModal(false);
+      setCredPassword('');
+      setCredPasswordConfirm('');
+
+      // Reload employee details
+      if (id) {
+        const updated = await getEmployee(id);
+        setEmployee(updated);
+      } else {
+        const updated = await getMyProfile();
+        setEmployee(updated);
+      }
+    } catch (err) {
+      if (err.response?.data?.errors) {
+        const firstErr = Object.values(err.response.data.errors)[0][0];
+        setCredError(firstErr);
+      } else {
+        setCredError(err.response?.data?.message || 'Failed to create login credentials.');
+      }
+    } finally {
+      setCredSubmitting(false);
+    }
+  };
+
+  const handleChangePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setChangePasswordSubmitting(true);
+    setChangePasswordError('');
+
+    if (changePasswordVal !== changePasswordConfirmVal) {
+      setChangePasswordError('Passwords do not match.');
+      setChangePasswordSubmitting(false);
+      return;
+    }
+
+    if (changePasswordVal.length < 8) {
+      setChangePasswordError('Password must be at least 8 characters long.');
+      setChangePasswordSubmitting(false);
+      return;
+    }
+
+    try {
+      await changePassword(employee.id, {
+        password: changePasswordVal,
+        password_confirmation: changePasswordConfirmVal,
+      });
+      setCredSuccess('Employee password changed successfully and active sessions were revoked.');
+      setShowChangePasswordModal(false);
+      setChangePasswordVal('');
+      setChangePasswordConfirmVal('');
+
+      if (id) {
+        const updated = await getEmployee(id);
+        setEmployee(updated);
+      } else {
+        const updated = await getMyProfile();
+        setEmployee(updated);
+      }
+    } catch (err) {
+      if (err.response?.data?.errors) {
+        const firstErr = Object.values(err.response.data.errors)[0][0];
+        setChangePasswordError(firstErr);
+      } else {
+        setChangePasswordError(err.response?.data?.message || 'Failed to change password.');
+      }
+    } finally {
+      setChangePasswordSubmitting(false);
+    }
+  };
+
   const initials = `${employee.first_name?.charAt(0) || ''}${employee.last_name?.charAt(0) || ''}`;
 
   return (
@@ -109,6 +215,13 @@ export default function EmployeeView() {
           )}
         </div>
       </div>
+
+      {credSuccess && (
+        <div style={{ padding: '0.75rem 1rem', color: '#065f46', backgroundColor: '#d1fae5', borderRadius: 'var(--radius-md)', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{credSuccess}</span>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => setCredSuccess('')}>✕</button>
+        </div>
+      )}
 
       {/* Hero Header Card */}
       <div className="detail-card" style={{ marginBottom: '1.5rem' }}>
@@ -167,9 +280,51 @@ export default function EmployeeView() {
               <span className="detail-label">Gender</span>
               <span className="detail-value">{employee.gender || '-'}</span>
             </div>
-            <div className="detail-item">
+            <div className="detail-item" style={{ gridColumn: '1 / -1' }}>
               <span className="detail-label">User Account</span>
-              <span className="detail-value">{employee.user?.name ? `${employee.user.name} (${employee.user.email})` : 'Linked'}</span>
+              <div className="detail-value" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                {employee.user_id ? (
+                  <>
+                    <span style={{ color: '#059669', fontWeight: 600 }}>
+                      Login Account: Linked ({employee.user?.email || employee.email})
+                    </span>
+                    {hasRole('Super Admin') && (
+                      <button
+                        className="btn-secondary"
+                        style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}
+                        onClick={() => {
+                          setShowChangePasswordModal(true);
+                          setChangePasswordError('');
+                          setChangePasswordVal('');
+                          setChangePasswordConfirmVal('');
+                        }}
+                      >
+                        Change Password
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span style={{ color: 'var(--text-secondary, #6b7280)' }}>
+                      No Login Account
+                    </span>
+                    {hasRole('Super Admin') && (
+                      <button
+                        className="btn-primary"
+                        style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}
+                        onClick={() => {
+                          setShowCredentialsModal(true);
+                          setCredError('');
+                          setCredPassword('');
+                          setCredPasswordConfirm('');
+                        }}
+                      >
+                        Create Login Account
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -296,6 +451,166 @@ export default function EmployeeView() {
           </div>
         )}
       </div>
+
+      {/* Modal for Super Admin creating credentials */}
+      {showCredentialsModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: 'var(--bg-surface, #ffffff)',
+            padding: '1.5rem',
+            borderRadius: 'var(--radius-lg, 8px)',
+            width: '100%',
+            maxWidth: '450px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+          }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+              Create Login Credentials
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              Creating login account for <strong>{employee.first_name} {employee.last_name}</strong> ({employee.email}). Role assigned: <strong>Employee</strong>.
+            </p>
+
+            {credError && (
+              <div style={{ color: '#ef4444', backgroundColor: '#fee2e2', padding: '0.5rem 0.75rem', borderRadius: '4px', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                {credError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateCredentialsSubmit}>
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label className="form-label">Password *</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={credPassword}
+                  onChange={(e) => setCredPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  placeholder="Min 8 characters"
+                />
+              </div>
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                <label className="form-label">Confirm Password *</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={credPasswordConfirm}
+                  onChange={(e) => setCredPasswordConfirm(e.target.value)}
+                  required
+                  minLength={8}
+                  placeholder="Re-enter password"
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowCredentialsModal(false)}
+                  disabled={credSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={credSubmitting}
+                >
+                  {credSubmitting ? 'Creating...' : 'Create Credentials'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Super Admin changing employee password */}
+      {showChangePasswordModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: 'var(--bg-surface, #ffffff)',
+            padding: '1.5rem',
+            borderRadius: 'var(--radius-lg, 8px)',
+            width: '100%',
+            maxWidth: '450px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+          }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+              Change Employee Password
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              Setting a new password for <strong>{employee.first_name} {employee.last_name}</strong> ({employee.user?.email || employee.email}). Active sessions will be terminated.
+            </p>
+
+            {changePasswordError && (
+              <div style={{ color: '#ef4444', backgroundColor: '#fee2e2', padding: '0.5rem 0.75rem', borderRadius: '4px', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                {changePasswordError}
+              </div>
+            )}
+
+            <form onSubmit={handleChangePasswordSubmit}>
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label className="form-label">New Password *</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={changePasswordVal}
+                  onChange={(e) => setChangePasswordVal(e.target.value)}
+                  required
+                  minLength={8}
+                  placeholder="Min 8 characters"
+                />
+              </div>
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                <label className="form-label">Confirm New Password *</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={changePasswordConfirmVal}
+                  onChange={(e) => setChangePasswordConfirmVal(e.target.value)}
+                  required
+                  minLength={8}
+                  placeholder="Re-enter new password"
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowChangePasswordModal(false)}
+                  disabled={changePasswordSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={changePasswordSubmitting}
+                >
+                  {changePasswordSubmitting ? 'Updating...' : 'Change Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );
