@@ -112,25 +112,57 @@ jobs:
 
           echo "Sending deployment command to EC2..."
 
+          cat << 'EOF' > ssm_payload.json
+          {
+            "commands": [
+              "sudo -u ubuntu -H bash -e << 'DEPLOY'",
+              "set -e",
+              "cd /home/ubuntu/HRMS",
+              "git fetch origin main",
+              "if [ -n \"$(git status --porcelain)\" ]; then",
+              "    echo \"ERROR: EC2 working tree is not clean. Aborting deployment.\"",
+              "    git status --short",
+              "    exit 1",
+              "fi",
+              "LOCAL=$(git rev-parse HEAD)",
+              "REMOTE=$(git rev-parse origin/main)",
+              "if [ \"$LOCAL\" = \"$REMOTE\" ]; then",
+              "    echo \"Up to date.\"",
+              "elif git merge-base --is-ancestor \"$LOCAL\" \"$REMOTE\"; then",
+              "    git merge --ff-only origin/main",
+              "else",
+              "    echo \"Divergence detected.\"",
+              "    git branch pre-deployment-$(date +%Y%m%d-%H%M%S) HEAD",
+              "    git reset --hard origin/main",
+              "fi",
+              "if [ \"$(git rev-parse HEAD)\" != \"$(git rev-parse origin/main)\" ]; then",
+              "    echo \"Failed to synchronize.\"",
+              "    exit 1",
+              "fi",
+              "cd /home/ubuntu/HRMS/hrm-backend",
+              "composer install --no-dev --optimize-autoloader",
+              "mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views",
+              "php artisan migrate --force",
+              "php artisan optimize:clear",
+              "php artisan config:cache",
+              "php artisan route:cache",
+              "php artisan view:cache",
+              "cd /home/ubuntu/HRMS/hrm-frontend",
+              "npm ci",
+              "npm run build",
+              "sudo systemctl reload php8.3-fpm",
+              "sudo systemctl reload nginx",
+              "echo \"Deployment completed successfully.\"",
+              "DEPLOY"
+            ]
+          }
+          EOF
+
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --comment "HRMS GitHub Actions deployment" \
-            --parameters 'commands=[
-              "set -e",
-              "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS && git fetch origin main\"",
-              "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS && if [ -n \\\"\\$(git status --porcelain)\\\" ]; then echo 'ERROR: EC2 working tree is not clean. Aborting deployment.'; git status --short; exit 1; fi\"",
-              "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS && LOCAL=\\$(git rev-parse HEAD); REMOTE=\\$(git rev-parse origin/main); if [ \\\"\\$LOCAL\\\" = \\\"\\$REMOTE\\\" ]; then echo 'Up to date.'; elif git merge-base --is-ancestor \\\"\\$LOCAL\\\" \\\"\\$REMOTE\\\"; then git merge --ff-only origin/main; else git branch pre-deployment-\\$(date +%Y%m%d-%H%M%S); git reset --hard origin/main; fi\"",
-              "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS && if [ \\\"\\$(git rev-parse HEAD)\\\" != \\\"\\$(git rev-parse origin/main)\\\" ]; then echo 'Failed to synchronize.'; exit 1; fi\"",
-              "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS/hrm-backend && composer install --no-dev --optimize-autoloader\"",
-              "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS/hrm-backend && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views\"",
-              "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS/hrm-backend && php artisan migrate --force\"",
-              "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS/hrm-backend && php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan view:cache\"",
-              "sudo -u ubuntu -H bash -lc \"cd /home/ubuntu/HRMS/hrm-frontend && npm ci && npm run build\"",
-              "sudo systemctl reload php8.3-fpm",
-              "sudo systemctl reload nginx",
-              "echo Deployment completed successfully."
-            ]' \
+            --parameters file://ssm_payload.json \
             --query "Command.CommandId" \
             --output text)
 
