@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Attendance;
 use App\Models\Employee;
+use App\Models\LeaveRequest;
 use App\Services\AuditService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -99,41 +100,64 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Get today's attendance state for the authenticated employee.
+     * Get today's attendance state for the authenticated employee and dashboard stats.
      */
     public function today(Request $request)
     {
         $user = $request->user();
         $employee = $user->employee;
 
-        if (!$employee) {
-            return response()->json(['today_attendance' => null]);
-        }
+        $attendance = null;
+        if ($employee) {
+            $now = Carbon::now();
+            $shift = $employee->currentShift();
 
-        $now = Carbon::now();
-        $shift = $employee->currentShift();
+            $today = $now->toDateString();
 
-        $today = $now->toDateString();
-        
-        // Handle night shift thresholding for 'today' retrieval
-        if ($shift && $shift->start_time > $shift->end_time) {
-            $shiftStartTime = Carbon::parse($shift->start_time);
-            $shiftEndTime = Carbon::parse($shift->end_time)->addDay();
-            $shiftEndWithBuffer = $shiftEndTime->copy()->addHours(4); // e.g. 07:00 AM + 4 hrs = 11:00 AM
-            
-            // If it's early morning, they are probably checking out for yesterday's shift
-            if ($now->format('H:i:s') < $shiftEndWithBuffer->format('H:i:s')) {
-                $today = $now->copy()->subDay()->toDateString();
+            // Handle night shift thresholding for 'today' retrieval
+            if ($shift && $shift->start_time > $shift->end_time) {
+                $shiftStartTime = Carbon::parse($shift->start_time);
+                $shiftEndTime = Carbon::parse($shift->end_time)->addDay();
+                $shiftEndWithBuffer = $shiftEndTime->copy()->addHours(4); // e.g. 07:00 AM + 4 hrs = 11:00 AM
+
+                // If it's early morning, they are probably checking out for yesterday's shift
+                if ($now->format('H:i:s') < $shiftEndWithBuffer->format('H:i:s')) {
+                    $today = $now->copy()->subDay()->toDateString();
+                }
             }
+
+            $attendance = Attendance::where('employee_id', $employee->id)
+                ->where('attendance_date', $today)
+                ->first();
         }
 
-        $attendance = Attendance::where('employee_id', $employee->id)
-            ->where('attendance_date', $today)
-            ->first();
+        $todayDate = Carbon::today()->toDateString();
+
+        $presentCount = Attendance::whereDate('attendance_date', $todayDate)
+            ->where('status', 'Present')
+            ->count();
+
+        $leaveCount = LeaveRequest::where('status', 'Approved')
+            ->whereDate('from_date', '<=', $todayDate)
+            ->whereDate('to_date', '>=', $todayDate)
+            ->count();
+
+        $totalEmployees = Employee::where('employment_status', 'Active')->count();
+
+        $absentCount = max(0, $totalEmployees - ($presentCount + $leaveCount));
+
+        $stats = [
+            'present' => $presentCount,
+            'leave'   => $leaveCount,
+            'absent'  => $absentCount,
+            'remote'  => 0,
+            'total'   => $totalEmployees,
+        ];
 
         return response()->json([
             'today_attendance' => $attendance,
             'server_time' => Carbon::now()->toIso8601String(),
+            'stats' => $stats,
         ]);
     }
 

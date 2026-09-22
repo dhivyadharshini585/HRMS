@@ -251,7 +251,7 @@ export default function RecruitmentReport() {
       <>
         {data?.calculation_note && (
           <div className="alert-info" style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', fontSize: '0.875rem', color: '#1e40af' }}>
-            ℹ️ {data.calculation_note}
+            <strong>ℹ️ Calculation Method:</strong> {data.calculation_note}
           </div>
         )}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '20px' }}>
@@ -294,8 +294,8 @@ export default function RecruitmentReport() {
     return (
       <>
         {data?.disclaimer && (
-          <div style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', fontSize: '0.875rem', color: '#92400e' }}>
-            ⚠️ <strong>Data Limitation:</strong> {data.disclaimer}
+          <div className="alert-info" style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', fontSize: '0.875rem', color: '#1e40af' }}>
+            <strong>ℹ️ Reporting Note:</strong> {data.disclaimer}
           </div>
         )}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
