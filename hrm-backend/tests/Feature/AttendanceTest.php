@@ -476,4 +476,55 @@ class AttendanceTest extends TestCase
         $allData = $responseAll->json('data');
         $this->assertCount(2, $allData);
     }
+
+    /** @test */
+    public function test_23_today_endpoint_returns_attendance_stats_including_present_today_count()
+    {
+        $todayDate = now()->toDateString();
+
+        // 1. Create Present attendance record for employee1
+        Attendance::create([
+            'employee_id' => $this->employee1->id,
+            'attendance_date' => $todayDate,
+            'check_in' => now()->subHours(2),
+            'status' => 'Present',
+        ]);
+
+        // 2. Create Half Day attendance record for employee2
+        Attendance::create([
+            'employee_id' => $this->employee2->id,
+            'attendance_date' => $todayDate,
+            'check_in' => now()->subHours(1),
+            'check_out' => now(),
+            'working_minutes' => 60,
+            'status' => 'Half Day',
+        ]);
+
+        // 3. Call GET /api/attendance/today as authorized user (employeeUser1)
+        $response = $this->actingAs($this->employeeUser1)->getJson('/api/attendance/today');
+
+        // 4. Assert HTTP 200
+        $response->assertStatus(200);
+
+        // 5. Assert stats structure exists
+        $response->assertJsonStructure([
+            'today_attendance',
+            'server_time',
+            'stats' => [
+                'present',
+                'leave',
+                'absent',
+                'remote',
+                'total',
+            ],
+        ]);
+
+        // 6. Assert stats.present = 1 and verify Half Day is NOT counted as Present
+        $this->assertEquals(1, $response->json('stats.present'));
+
+        // 8. Verify today_attendance still works for the authenticated employee
+        $this->assertNotNull($response->json('today_attendance'));
+        $this->assertEquals($this->employee1->id, $response->json('today_attendance.employee_id'));
+        $this->assertEquals('Present', $response->json('today_attendance.status'));
+    }
 }
